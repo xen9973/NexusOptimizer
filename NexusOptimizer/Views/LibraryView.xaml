@@ -1,0 +1,293 @@
+<UserControl x:Class="NexusOptimizer.Views.LibraryView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:converters="clr-namespace:NexusOptimizer.Converters">
+
+    <UserControl.Resources>
+        <converters:GameIconConverter x:Key="GameIconConverter"/>
+        <converters:GameIconVisibilityConverter x:Key="GameIconVisibilityConverter"/>
+        <BooleanToVisibilityConverter x:Key="BoolToVisibility"/>
+    </UserControl.Resources>
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Заголовок и главные действия -->
+        <Grid Grid.Row="0" Margin="0,0,0,18">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel VerticalAlignment="Center">
+                <TextBlock Text="Библиотека" Style="{StaticResource PageTitleText}"/>
+                <TextBlock Text="{Binding LibrarySummary}"
+                           Style="{StaticResource MutedText}"
+                           Margin="0,4,0,0"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1"
+                        Orientation="Horizontal"
+                        VerticalAlignment="Center">
+                <Button Content="Добавить папку"
+                        Click="AddFolder_Click"
+                        Height="40"
+                        Padding="18,9"
+                        Margin="0,0,10,0"/>
+                <Button Content="{Binding ScanButtonText}"
+                        Click="Scan_Click"
+                        Style="{StaticResource AccentButton}"
+                        Height="40"
+                        MinWidth="170"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Поиск -->
+        <Grid Grid.Row="1" Margin="0,0,0,12">
+            <TextBox x:Name="SearchBox"
+                     Text="{Binding SearchText, UpdateSourceTrigger=PropertyChanged}"
+                     Height="42"
+                     Padding="40,10,12,10"/>
+
+            <TextBlock Text="⌕"
+                       FontSize="18"
+                       Foreground="{StaticResource MutedBrush}"
+                       Margin="14,0,0,2"
+                       VerticalAlignment="Center"
+                       IsHitTestVisible="False"/>
+
+            <TextBlock Text="Поиск по названию или пути"
+                       Margin="40,0,0,0"
+                       VerticalAlignment="Center"
+                       Foreground="{StaticResource MutedBrush}"
+                       IsHitTestVisible="False">
+                <TextBlock.Style>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="Visibility" Value="Collapsed"/>
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding Text, ElementName=SearchBox}" Value="">
+                                <Setter Property="Visibility" Value="Visible"/>
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </TextBlock.Style>
+            </TextBlock>
+        </Grid>
+
+        <!-- Фильтр по источнику -->
+        <ListBox Grid.Row="2"
+                 Margin="0,0,0,14"
+                 Style="{StaticResource ChipListBoxStyle}"
+                 ItemsSource="{Binding PlatformFilters}"
+                 SelectedItem="{Binding SelectedPlatform, Mode=TwoWay}"/>
+
+        <!-- Папки для поиска -->
+        <StackPanel Grid.Row="3"
+                    Margin="0,0,0,6"
+                    Visibility="{Binding HasExtraFolders, Converter={StaticResource BoolToVisibility}}">
+            <TextBlock Text="Папки для поиска"
+                       Style="{StaticResource MutedText}"
+                       FontSize="12"
+                       Margin="0,0,0,8"/>
+            <ItemsControl ItemsSource="{Binding ExtraFolders}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{StaticResource CardBrush}"
+                                BorderBrush="{StaticResource LineBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="10,3,3,3"
+                                Margin="0,0,8,8">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding}"
+                                           ToolTip="{Binding}"
+                                           MaxWidth="380"
+                                           FontSize="12"
+                                           Foreground="{StaticResource BodyTextBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center"/>
+                                <Button Content="✕"
+                                        Tag="{Binding}"
+                                        Click="RemoveFolder_Click"
+                                        ToolTip="Убрать папку из поиска"
+                                        Background="Transparent"
+                                        Foreground="{StaticResource MutedBrush}"
+                                        Padding="8,3"
+                                        Margin="6,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
+
+        <!-- Список игр -->
+        <Border Grid.Row="4"
+                Style="{StaticResource PanelCard}"
+                Padding="18,18,8,4">
+            <Grid>
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding FilteredGames}">
+                        <ItemsControl.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal"/>
+                            </ItemsPanelTemplate>
+                        </ItemsControl.ItemsPanel>
+
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Width="296"
+                                        Padding="16"
+                                        Margin="0,0,14,14"
+                                        BorderThickness="1"
+                                        CornerRadius="14"
+                                        Cursor="Hand"
+                                        MouseLeftButtonUp="GameCard_Click">
+                                    <Border.Style>
+                                        <Style TargetType="Border">
+                                            <Setter Property="Background" Value="{StaticResource CardBrush}"/>
+                                            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+                                            <Style.Triggers>
+                                                <Trigger Property="IsMouseOver" Value="True">
+                                                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Border.Style>
+
+                                    <StackPanel>
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="Auto"/>
+                                                <ColumnDefinition Width="*"/>
+                                            </Grid.ColumnDefinitions>
+
+                                            <Border Width="48"
+                                                    Height="48"
+                                                    CornerRadius="12"
+                                                    Background="{StaticResource InputBrush}"
+                                                    VerticalAlignment="Top">
+                                                <Grid>
+                                                    <Image Source="{Binding Converter={StaticResource GameIconConverter}}"
+                                                           Width="36"
+                                                           Height="36"
+                                                           Stretch="Uniform"
+                                                           RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                    <TextBlock Text="🎮"
+                                                               FontSize="22"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               Visibility="{Binding Converter={StaticResource GameIconVisibilityConverter}}"/>
+                                                </Grid>
+                                            </Border>
+
+                                            <StackPanel Grid.Column="1" Margin="12,0,0,0">
+                                                <TextBlock Text="{Binding Name}"
+                                                           ToolTip="{Binding Name}"
+                                                           FontSize="15"
+                                                           FontWeight="SemiBold"
+                                                           Foreground="{StaticResource TextBrush}"
+                                                           TextWrapping="Wrap"
+                                                           MaxHeight="42"
+                                                           TextTrimming="CharacterEllipsis"/>
+                                                <TextBlock Text="{Binding Platform}"
+                                                           Style="{StaticResource MutedText}"
+                                                           FontSize="12"
+                                                           Margin="0,3,0,0"/>
+                                            </StackPanel>
+                                        </Grid>
+
+                                        <Border HorizontalAlignment="Left"
+                                                CornerRadius="9"
+                                                Padding="9,3"
+                                                Margin="0,14,0,8">
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Setter Property="Background" Value="{StaticResource SuccessSoftBrush}"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+                                                            <Setter Property="Background" Value="{StaticResource WarningSoftBrush}"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                            <TextBlock Text="{Binding Status}" FontSize="11" FontWeight="SemiBold">
+                                                <TextBlock.Style>
+                                                    <Style TargetType="TextBlock">
+                                                        <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsAvailable}" Value="False">
+                                                                <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </TextBlock.Style>
+                                            </TextBlock>
+                                        </Border>
+
+                                        <TextBlock Text="{Binding InstallPath}"
+                                                   ToolTip="{Binding InstallPath}"
+                                                   Style="{StaticResource MutedText}"
+                                                   FontSize="11"
+                                                   TextTrimming="CharacterEllipsis"
+                                                   Margin="0,0,0,12"/>
+
+                                        <UniformGrid Rows="1">
+                                            <Button Content="Папка"
+                                                    Tag="{Binding}"
+                                                    Click="OpenFolder_Click"
+                                                    Padding="8,8"
+                                                    Margin="0,0,5,0"/>
+                                            <Button Content="Копировать путь"
+                                                    Tag="{Binding}"
+                                                    Click="CopyPath_Click"
+                                                    Padding="8,8"
+                                                    Margin="5,0,0,0"/>
+                                        </UniformGrid>
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+
+                <!-- Пустое состояние -->
+                <StackPanel HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            MaxWidth="420"
+                            Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}">
+                    <TextBlock Text="{Binding EmptyTitle}"
+                               Style="{StaticResource SectionTitleText}"
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="{Binding EmptyHint}"
+                               Style="{StaticResource MutedText}"
+                               TextWrapping="Wrap"
+                               TextAlignment="Center"
+                               LineHeight="20"
+                               Margin="0,8,0,0"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <!-- Строка состояния -->
+        <TextBlock Grid.Row="5"
+                   Text="{Binding Status}"
+                   Style="{StaticResource MutedText}"
+                   FontSize="12"
+                   TextTrimming="CharacterEllipsis"
+                   Margin="2,12,0,0"/>
+    </Grid>
+</UserControl>

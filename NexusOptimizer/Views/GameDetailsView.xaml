@@ -1,0 +1,206 @@
+<UserControl x:Class="NexusOptimizer.Views.GameDetailsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <Button Grid.Row="0"
+                Content="←  Назад в библиотеку"
+                Click="Back_Click"
+                HorizontalAlignment="Left"
+                Padding="14,9"
+                Margin="0,0,0,16"/>
+
+        <ScrollViewer x:Name="PageScroll"
+                      Grid.Row="1"
+                      VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+            <StackPanel Margin="0,0,12,0">
+
+                <!-- Шапка игры -->
+                <Border Style="{StaticResource PanelCard}" Margin="0,0,0,16">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border Width="320"
+                                Height="150"
+                                Background="{StaticResource CardBrush}"
+                                VerticalAlignment="Top"
+                                Margin="0,0,22,0">
+                            <Border.Clip>
+                                <RectangleGeometry Rect="0,0,320,150" RadiusX="12" RadiusY="12"/>
+                            </Border.Clip>
+                            <Grid>
+                                <Image x:Name="GameIconImage"
+                                       Width="64"
+                                       Height="64"
+                                       Stretch="Uniform"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                                <Image x:Name="HeaderImage"
+                                       Stretch="UniformToFill"
+                                       RenderOptions.BitmapScalingMode="HighQuality"/>
+                            </Grid>
+                        </Border>
+
+                        <StackPanel Grid.Column="1">
+                            <TextBlock x:Name="GameNameText"
+                                       Style="{StaticResource PageTitleText}"
+                                       TextWrapping="Wrap"/>
+                            <TextBlock x:Name="GamePlatformText"
+                                       Style="{StaticResource MutedText}"
+                                       Margin="0,6,0,0"/>
+                            <TextBlock x:Name="GenresText"
+                                       Foreground="{StaticResource AccentTextBrush}"
+                                       FontSize="13"
+                                       TextWrapping="Wrap"
+                                       Margin="0,10,0,0"
+                                       Visibility="Collapsed"/>
+                            <TextBlock x:Name="MetaText"
+                                       Style="{StaticResource MutedText}"
+                                       FontSize="12"
+                                       LineHeight="19"
+                                       TextWrapping="Wrap"
+                                       Margin="0,8,0,0"
+                                       Visibility="Collapsed"/>
+                            <TextBlock x:Name="GamePathText"
+                                       Style="{StaticResource MutedText}"
+                                       FontSize="11"
+                                       TextWrapping="Wrap"
+                                       Margin="0,10,0,0"/>
+
+                            <WrapPanel Margin="0,16,0,0">
+                                <Button Content="Запустить игру"
+                                        Click="LaunchGame_Click"
+                                        Style="{StaticResource AccentButton}"
+                                        Padding="24,11"
+                                        Margin="0,0,8,8"/>
+                                <Button Content="Открыть папку"
+                                        Click="OpenFolder_Click"
+                                        Padding="16,11"
+                                        Margin="0,0,8,8"/>
+                                <Button x:Name="StoreButton"
+                                        Content="Страница в Steam"
+                                        Click="OpenStore_Click"
+                                        Padding="16,11"
+                                        Margin="0,0,0,8"
+                                        Visibility="Collapsed"/>
+                            </WrapPanel>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Скриншоты -->
+                <Border x:Name="GalleryCard"
+                        Style="{StaticResource PanelCard}"
+                        Margin="0,0,0,16"
+                        Visibility="Collapsed">
+                    <StackPanel>
+                        <TextBlock Text="Скриншоты" Style="{StaticResource SectionTitleText}"/>
+
+                        <Border Height="360"
+                                Background="#0B0D11"
+                                CornerRadius="12"
+                                Margin="0,14,0,12">
+                            <Image Source="{Binding SelectedItem.FullUrl, ElementName=ScreenshotList}"
+                                   Stretch="Uniform"
+                                   RenderOptions.BitmapScalingMode="HighQuality"/>
+                        </Border>
+
+                        <ListBox x:Name="ScreenshotList"
+                                 Style="{StaticResource ThumbListBoxStyle}">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <Image Source="{Binding ThumbnailUrl}"
+                                           Width="128"
+                                           Height="72"
+                                           Stretch="UniformToFill"/>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </StackPanel>
+                </Border>
+
+                <!-- Описание -->
+                <Border Style="{StaticResource PanelCard}" Margin="0,0,0,16">
+                    <StackPanel HorizontalAlignment="Left" MaxWidth="780">
+                        <TextBlock Text="Об игре" Style="{StaticResource SectionTitleText}"/>
+                        <TextBlock x:Name="ShortDescriptionText"
+                                   Foreground="{StaticResource TextBrush}"
+                                   FontSize="14"
+                                   LineHeight="22"
+                                   TextWrapping="Wrap"
+                                   Margin="0,12,0,0"
+                                   Visibility="Collapsed"/>
+                        <TextBlock x:Name="DescriptionText"
+                                   Foreground="{StaticResource BodyTextBrush}"
+                                   FontSize="13"
+                                   LineHeight="21"
+                                   TextWrapping="Wrap"
+                                   Margin="0,12,0,0"/>
+                    </StackPanel>
+                </Border>
+
+                <!-- Запуск и оптимизация -->
+                <Border Style="{StaticResource PanelCard}" Margin="0,0,0,8">
+                    <StackPanel HorizontalAlignment="Left" MaxWidth="780">
+                        <TextBlock Text="Параметры запуска" Style="{StaticResource SectionTitleText}"/>
+                        <TextBlock Style="{StaticResource MutedText}"
+                                   TextWrapping="Wrap"
+                                   LineHeight="20"
+                                   Margin="0,8,0,16"
+                                   Text="Настройки хранятся отдельно для каждой игры. Программа не меняет системные службы и BIOS, а повышенный приоритет не гарантирует рост FPS."/>
+
+                        <TextBlock Text="Аргументы запуска"
+                                   FontSize="12"
+                                   FontWeight="SemiBold"
+                                   Foreground="{StaticResource BodyTextBrush}"
+                                   Margin="0,0,0,6"/>
+                        <TextBox x:Name="LaunchArgumentsTextBox"/>
+
+                        <CheckBox x:Name="AboveNormalPriorityCheckBox" Margin="0,16,0,0">
+                            <TextBlock TextWrapping="Wrap"
+                                       Text="Повышенный приоритет процесса при прямом запуске. Для игр Steam запуск идёт через клиент, и приоритет не меняется."/>
+                        </CheckBox>
+
+                        <WrapPanel Margin="0,18,0,0">
+                            <Button Content="Сохранить настройки"
+                                    Click="SaveSettings_Click"
+                                    Padding="16,10"
+                                    Margin="0,0,8,0"/>
+                            <Button Content="Сбросить настройки"
+                                    Click="ResetSettings_Click"
+                                    Padding="16,10"/>
+                        </WrapPanel>
+
+                        <TextBlock x:Name="SettingsStatusText"
+                                   Style="{StaticResource MutedText}"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Margin="0,12,0,0"/>
+                        <TextBlock x:Name="OptimizationStatusText"
+                                   Foreground="{StaticResource AccentTextBrush}"
+                                   FontSize="12"
+                                   TextWrapping="Wrap"
+                                   Margin="0,4,0,0"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+        </ScrollViewer>
+
+        <TextBlock x:Name="WindowStatusText"
+                   Grid.Row="2"
+                   Style="{StaticResource MutedText}"
+                   FontSize="12"
+                   TextTrimming="CharacterEllipsis"
+                   Margin="2,12,0,0"/>
+    </Grid>
+</UserControl>

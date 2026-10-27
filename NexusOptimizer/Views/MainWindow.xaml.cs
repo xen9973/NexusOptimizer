@@ -1,10 +1,7 @@
-
-using NexusOptimizer.Models;
-using NexusOptimizer.ViewModels;
-using NexusOptimizer.Views;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
+using NexusOptimizer.Models;
+using NexusOptimizer.ViewModels;
 
 namespace NexusOptimizer;
 
@@ -15,42 +12,50 @@ public partial class MainWindow : Window
     public MainWindow()
     {
         InitializeComponent();
+
         DataContext = _viewModel;
+
+        LibraryPage.GameOpened += ShowGame;
+        GamePage.BackRequested += ShowLibrary;
+
+        Loaded += async (_, _) => await _viewModel.InitializeAsync();
+        Closing += (_, _) => _viewModel.Shutdown();
     }
 
-    private void AddFolder_Click(object sender, RoutedEventArgs e)
+    private void Nav_Click(object sender, RoutedEventArgs e)
     {
-        _viewModel.AddFolder();
-    }
-
-    private async void Scan_Click(object sender, RoutedEventArgs e)
-    {
-        await _viewModel.ScanAsync();
-    }
-
-    private void OpenFolder_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button { Tag: GameInfo game })
-            _viewModel.OpenGameFolder(game);
-    }
-
-    private void CopyPath_Click(object sender, RoutedEventArgs e)
-    {
-        if (sender is Button { Tag: GameInfo game })
-            _viewModel.CopyGamePath(game);
-    }
-    private void GameCard_Click(
-        object sender,
-        MouseButtonEventArgs e)
-    {
-        if (sender is not Border { DataContext: GameInfo game })
+        if (sender is not RadioButton { Tag: string target })
             return;
 
-        var window = new GameDetailsWindow(game)
-        {
-            Owner = this
-        };
+        if (target == "Cleanup")
+            ShowCleanup();
+        else
+            ShowLibrary();
+    }
 
-        window.ShowDialog();
+    private void ShowLibrary()
+    {
+        NavLibrary.IsChecked = true;
+        ShowOnly(LibraryPage);
+    }
+
+    private void ShowGame(GameInfo game)
+    {
+        NavLibrary.IsChecked = true;
+        GamePage.ShowGame(game);
+        ShowOnly(GamePage);
+    }
+
+    private void ShowCleanup()
+    {
+        NavCleanup.IsChecked = true;
+        ShowOnly(CleanupPage);
+    }
+
+    private void ShowOnly(UIElement page)
+    {
+        LibraryPage.Visibility = ReferenceEquals(page, LibraryPage) ? Visibility.Visible : Visibility.Collapsed;
+        GamePage.Visibility = ReferenceEquals(page, GamePage) ? Visibility.Visible : Visibility.Collapsed;
+        CleanupPage.Visibility = ReferenceEquals(page, CleanupPage) ? Visibility.Visible : Visibility.Collapsed;
     }
 }

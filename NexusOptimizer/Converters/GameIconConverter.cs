@@ -1,12 +1,13 @@
-﻿
 using System;
 using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
+using NexusOptimizer.Models;
 using NexusOptimizer.Services;
 
 namespace NexusOptimizer.Converters;
 
+/// <summary>Принимает GameInfo (привязка без пути) и возвращает иконку игры.</summary>
 public sealed class GameIconConverter : IValueConverter
 {
     public object Convert(
@@ -15,7 +16,7 @@ public sealed class GameIconConverter : IValueConverter
         object parameter,
         CultureInfo culture)
     {
-        return GameIconHelper.GetIcon(value as string)
+        return GameIconHelper.GetIcon(value as GameInfo)
                ?? DependencyProperty.UnsetValue;
     }
 
@@ -37,7 +38,7 @@ public sealed class GameIconVisibilityConverter : IValueConverter
         object parameter,
         CultureInfo culture)
     {
-        return GameIconHelper.GetIcon(value as string) is null
+        return GameIconHelper.GetIcon(value as GameInfo) is null
             ? Visibility.Visible
             : Visibility.Collapsed;
     }

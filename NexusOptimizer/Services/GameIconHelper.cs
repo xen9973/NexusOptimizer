@@ -1,13 +1,11 @@
-﻿
 using System;
 using System.Collections.Concurrent;
-using System.IO;
-using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using NexusOptimizer.Models;
 
 namespace NexusOptimizer.Services;
 
@@ -19,12 +17,16 @@ public static class GameIconHelper
     private const uint SHGFI_ICON = 0x000000100;
     private const uint SHGFI_LARGEICON = 0x000000000;
 
-    public static ImageSource? GetIcon(string? installPath)
+    /// <param name="rememberMisses">
+    /// false — для фонового прогрева кэша: неудача не запоминается,
+    /// и иконку ещё раз попробуют получить уже в UI-потоке.
+    /// </param>
+    public static ImageSource? GetIcon(GameInfo? game, bool rememberMisses = true)
     {
-        if (string.IsNullOrWhiteSpace(installPath))
+        if (game is null || string.IsNullOrWhiteSpace(game.InstallPath))
             return null;
 
-        string key = installPath.Trim();
+        string key = game.InstallPath.Trim();
 
         if (Cache.TryGetValue(key, out var cached))
             return cached;
@@ -32,50 +34,21 @@ public static class GameIconHelper
         if (MissingIcons.ContainsKey(key))
             return null;
 
-        var icon = LoadIcon(key);
+        var icon = LoadIcon(game);
 
         if (icon is not null)
             Cache.TryAdd(key, icon);
-        else
+        else if (rememberMisses)
             MissingIcons.TryAdd(key, 0);
 
         return icon;
     }
 
-    private static ImageSource? LoadIcon(string installPath)
+    private static ImageSource? LoadIcon(GameInfo game)
     {
         try
         {
-            if (!Directory.Exists(installPath))
-                return null;
-
-            var executables = Directory
-                .EnumerateFiles(
-                    installPath,
-                    "*.exe",
-                    SearchOption.TopDirectoryOnly)
-                .ToArray();
-
-            if (executables.Length == 0)
-                return null;
-
-            string folderName = Path.GetFileName(
-                installPath.TrimEnd(
-                    Path.DirectorySeparatorChar,
-                    Path.AltDirectorySeparatorChar));
-
-            string? exe = executables
-                .OrderByDescending(path =>
-                    string.Equals(
-                        Path.GetFileNameWithoutExtension(path),
-                        folderName,
-                        StringComparison.OrdinalIgnoreCase))
-                .ThenByDescending(path =>
-                {
-                    try { return new FileInfo(path).Length; }
-                    catch { return 0L; }
-                })
-                .FirstOrDefault();
+            string? exe = ExecutableLocator.Resolve(game);
 
             if (exe is null)
                 return null;
@@ -107,8 +80,9 @@ public static class GameIconHelper
                 DestroyIcon(info.hIcon);
             }
         }
-        catch
+        catch (Exception ex)
         {
+            AppLog.Warn($"Иконка: {game.InstallPath}", ex);
             return null;
         }
     }
