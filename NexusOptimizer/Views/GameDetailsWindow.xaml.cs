@@ -7,6 +7,9 @@ using System.Threading.Tasks;
 using System.Windows;
 using NexusOptimizer.Models;
 using NexusOptimizer.Services;
+using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace NexusOptimizer.Views;
 
@@ -19,6 +22,7 @@ public partial class GameDetailsWindow : Window
     public GameDetailsWindow(GameInfo game)
     {
         InitializeComponent();
+        
 
         _game = game;
 
@@ -28,7 +32,7 @@ public partial class GameDetailsWindow : Window
         GamePathText.Text = game.InstallPath;
 
         GameIconImage.Source = GameIconHelper.GetIcon(game.InstallPath);
-
+LoadSettings();
         Loaded += async (_, _) => await LoadDetailsAsync();
     }
 
@@ -84,21 +88,32 @@ public partial class GameDetailsWindow : Window
     {
         try
         {
-            // Для Steam предпочитаем штатный запуск через клиент.
+            string arguments = LaunchArgumentsTextBox.Text.Trim();
+            bool useAboveNormal =
+                AboveNormalPriorityCheckBox.IsChecked == true;
+
+            // Сохраняем параметры перед запуском.
+            SaveSettings_Click(sender, e);
+
+            // Для Steam запускаем игру через клиент.
             if (!string.IsNullOrWhiteSpace(_steamAppId))
             {
+                string steamUri = $"steam://run/{_steamAppId}";
+
+                if (!string.IsNullOrWhiteSpace(arguments))
+                    steamUri += $"//{Uri.EscapeDataString(arguments)}";
+
                 Process.Start(new ProcessStartInfo
                 {
-                    FileName = $"steam://run/{_steamAppId}",
+                    FileName = steamUri,
                     UseShellExecute = true
                 });
 
-                WindowStatusText.Text = "Команда запуска передана Steam.";
+                WindowStatusText.Text = "Команда передана Steam.";
 
-                OptimizationStatusText.Text =
-                    OptimizeOnLaunchCheckBox.IsChecked == true
-                        ? "Steam запускает игру. Приоритет процесса не изменялся."
-                        : "Запуск через Steam без изменения приоритета.";
+                OptimizationStatusText.Text = useAboveNormal
+                    ? "Приоритет для Steam-игры автоматически не изменён."
+                    : "Запуск выполнен без изменения приоритета.";
 
                 return;
             }
@@ -108,32 +123,39 @@ public partial class GameDetailsWindow : Window
             if (executable is null)
             {
                 MessageBox.Show(
-                    "Не удалось найти EXE-файл игры. " +
-                    "Попробуйте запустить игру через её лаунчер.",
+                    "Не удалось найти EXE-файл игры. Попробуйте запустить её через лаунчер.",
                     "Nexus Optimizer",
                     MessageBoxButton.OK,
                     MessageBoxImage.Information);
                 return;
             }
 
-            var process = Process.Start(new ProcessStartInfo
+            var startInfo = new ProcessStartInfo
             {
                 FileName = executable,
                 WorkingDirectory = Path.GetDirectoryName(executable)!,
-                UseShellExecute = true
-            });
+                Arguments = arguments,
+                UseShellExecute = false
+            };
 
-            WindowStatusText.Text = "Команда запуска выполнена.";
+            Process? process = Process.Start(startInfo);
 
-            if (process is not null &&
-                OptimizeOnLaunchCheckBox.IsChecked == true)
+            if (process is null)
+            {
+                WindowStatusText.Text = "Не удалось запустить игру.";
+                return;
+            }
+
+            WindowStatusText.Text = "Игра запущена.";
+
+            if (useAboveNormal)
             {
                 try
                 {
                     process.PriorityClass = ProcessPriorityClass.AboveNormal;
 
                     OptimizationStatusText.Text =
-                        "Приоритет «Выше обычного» применён к запущенному процессу.";
+                        "Для запущенного процесса установлен приоритет «Выше обычного».";
                 }
                 catch
                 {
@@ -144,7 +166,7 @@ public partial class GameDetailsWindow : Window
             else
             {
                 OptimizationStatusText.Text =
-                    "Игра запущена без изменения приоритета.";
+                    "Игра запущена со стандартным приоритетом.";
             }
         }
         catch (Exception ex)
@@ -215,5 +237,120 @@ public partial class GameDetailsWindow : Window
         {
             return null;
         }
+    }
+    private sealed class GameSettings
+    {
+       public string LaunchArguments { get; set; } = "";
+       public bool AboveNormalPriority { get; set; }
+    }
+    private string SettingsFilePath 
+    {
+        get
+        { 
+            string directory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "NexusOptimizer",
+                "GameSettings");
+            
+            Directory.CreateDirectory(directory);
+
+            string key = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(_game.InstallPath.Trim().ToLowerInvariant())));
+
+            return Path.Combine(directory, $"{key}.json");
+        }
+    }
+    private void LoadSettings()
+    {
+        try
+        {
+            if (!File.Exists(SettingsFilePath))
+                return;
+            string json = File.ReadAllText(SettingsFilePath);
+            var settings = JsonSerializer.Deserialize<GameSettings>(json);
+            if (settings is null)
+                return;
+
+            LaunchArgumentsTextBox.Text = settings.LaunchArguments;
+            AboveNormalPriorityCheckBox.IsChecked = settings.AboveNormalPriority;
+            SettingsStatusText.Text = "Настройки загружены.";
+        }
+        catch
+        {
+            SettingsStatusText.Text = "Не удалось загрузить настройки.";
+        }
+    }
+    private void SaveSettings_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var settings = new GameSettings
+            {
+                LaunchArguments = LaunchArgumentsTextBox.Text.Trim(),
+                AboveNormalPriority = AboveNormalPriorityCheckBox.IsChecked == true
+            };
+
+            string json = JsonSerializer.Serialize(
+                settings,
+                new JsonSerializerOptions { WriteIndented = true });
+
+            File.WriteAllText(SettingsFilePath, json);
+
+            SettingsStatusText.Text = "Настройки сохранены.";
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show(
+                $"Не удалось сохранить настройки.\n{ex.Message}",
+                "Nexus Optimizer",
+                MessageBoxButton.OK,
+                MessageBoxImage.Error);
+        }
+    }
+
+    private void ResetSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var result = MessageBox.Show(
+            "Сбросить сохранённые параметры запуска и приоритета для этой игры?",
+            "Сброс настроек",
+            MessageBoxButton.YesNo,
+            MessageBoxImage.Question);
+
+        if (result != MessageBoxResult.Yes)
+            return;
+
+        LaunchArgumentsTextBox.Clear();
+        AboveNormalPriorityCheckBox.IsChecked = false;
+
+        try
+        {
+            if (File.Exists(SettingsFilePath))
+                File.Delete(SettingsFilePath);
+
+            SettingsStatusText.Text = "Настройки сброшены.";
+        }
+        catch (Exception ex)
+        {
+            SettingsStatusText.Text = $"Не удалось удалить сохранённый профиль: {ex.Message}";
+        }
+    }
+
+    private void OpenGameDirectory_Click(object sender, RoutedEventArgs e)
+    {
+        if (!Directory.Exists(_game.InstallPath))
+        {
+            MessageBox.Show(
+                "Папка игры не найдена.",
+                "Nexus Optimizer",
+                MessageBoxButton.OK,
+                MessageBoxImage.Information);
+            return;
+        }
+
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = "explorer.exe",
+            Arguments = $"\"{_game.InstallPath}\"",
+            UseShellExecute = true
+        });
     }
 }

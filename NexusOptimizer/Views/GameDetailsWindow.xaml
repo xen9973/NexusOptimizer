@@ -120,6 +120,46 @@
                                    FontSize="17"
                                    FontWeight="SemiBold"/>
 
+                        <TextBlock Text="Параметры запуска"
+                                   FontSize="15"
+                                   FontWeight="SemiBold"/>
+
+                        <TextBlock Text="Дополнительные аргументы командной строки. Используй только параметры, поддерживаемые выбранной игрой."
+                                   Foreground="{StaticResource MutedBrush}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,6,0,10"/>
+
+                        <TextBox x:Name="LaunchArgumentsTextBox"
+                                 Text=""
+                                 ToolTip="Например, параметры запуска, предусмотренные игрой"
+                                 Padding="10,9"
+                                 Margin="0,0,0,12"/>
+
+                        <CheckBox x:Name="AboveNormalPriorityCheckBox"
+                                  Content="Повышенный приоритет процесса при прямом запуске"
+                                  IsChecked="False"
+                                  Foreground="#F2F4F8"
+                                  Margin="0,0,0,14"/>
+
+                        <WrapPanel>
+                            <Button Content="Сохранить настройки"
+                                    Click="SaveSettings_Click"/>
+
+                            <Button Content="Открыть папку игры"
+                                    Click="OpenGameDirectory_Click"/>
+
+                            <Button Content="Сбросить настройки"
+                                    Click="ResetSettings_Click"
+                                    Margin="0"/>
+                        </WrapPanel>
+
+                        <TextBlock x:Name="SettingsStatusText"
+                                   Text="Настройки ещё не сохранены"
+                                   Foreground="{StaticResource MutedBrush}"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Margin="0,12,0,0"/>
+
                         <TextBlock Text="Безопасный профиль запуска"
                                    FontSize="13"
                                    FontWeight="SemiBold"
