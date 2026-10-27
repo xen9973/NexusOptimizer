@@ -278,12 +278,14 @@
                                 <Border Width="300"
                                         MinWidth="260"
                                         MinHeight="210"
-                                        Margin="0,0,14,14"
-                                        Padding="16"
-                                        CornerRadius="12"
                                         Background="{StaticResource CardBrush}"
                                         BorderBrush="{StaticResource BorderBrush}"
-                                        BorderThickness="1">
+                                        BorderThickness="1"
+                                        CornerRadius="14"
+                                        Padding="16"
+                                        Margin="0,0,14,14"
+                                        Cursor="Hand"
+                                        MouseLeftButtonUp="GameCard_Click">
 
                                     <Grid>
                                         <Grid.RowDefinitions>
@@ -300,27 +302,27 @@
                                             </Grid.ColumnDefinitions>
 
                                             <Border Width="42"
-        Height="42"
-        CornerRadius="10"
-        Background="#293B5B"
-        ClipToBounds="True">
+                                                    Height="42"
+                                                    CornerRadius="10"
+                                                    Background="#293B5B"
+                                                    ClipToBounds="True">
 
                                                 <Grid>
                                                     <!-- Настоящая иконка приложения -->
                                                     <Image Source="{Binding InstallPath,
-                        Converter={StaticResource GameIconConverter}}"
-               Width="42"
-               Height="42"
-               Stretch="Uniform"
-               RenderOptions.BitmapScalingMode="HighQuality"/>
+                                                    Converter={StaticResource GameIconConverter}}"
+                                                    Width="42"
+                                                    Height="42"
+                                                    Stretch="Uniform"
+                                                    RenderOptions.BitmapScalingMode="HighQuality"/>
 
                                                     <!-- Запасной значок, если иконку получить не удалось -->
                                                     <TextBlock Text="🎮"
-                   FontSize="19"
-                   HorizontalAlignment="Center"
-                   VerticalAlignment="Center"
-                   Visibility="{Binding InstallPath,
-                       Converter={StaticResource GameIconVisibilityConverter}}"/>
+                                                               FontSize="19"
+                                                               HorizontalAlignment="Center"
+                                                               VerticalAlignment="Center"
+                                                               Visibility="{Binding InstallPath,
+                                                               Converter={StaticResource GameIconVisibilityConverter}}"/>
                                                 </Grid>
                                             </Border>
 
