@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
@@ -16,8 +17,11 @@ public partial class GameDetailsView : UserControl
 {
     private readonly GameDetailsService _detailsService = new();
     private readonly GameSettingsStore _settingsStore = new();
+    private readonly GameTweaksService _tweaks = new();
 
     private GameInfo? _game;
+    private GameSettings _settings = new();
+    private IReadOnlyList<string> _executables = [];
     private string? _storeUrl;
     private CancellationTokenSource? _loadCts;
 
@@ -62,10 +66,10 @@ public partial class GameDetailsView : UserControl
         ShortDescriptionText.Visibility = Visibility.Collapsed;
         DescriptionText.Text = "Загружаем описание из Steam…";
 
-        OptimizationStatusText.Text = "Профиль ещё не применялся.";
+        OptimizationStatusText.Text = string.Empty;
         WindowStatusText.Text = "Получение информации об игре…";
 
-        LoadSettings(game);
+        LoadProfile(game);
 
         _ = LoadDetailsAsync(game, _loadCts.Token);
     }
@@ -163,7 +167,7 @@ public partial class GameDetailsView : UserControl
             WindowStatusText.Text = "Описание найдено в магазине Steam по названию игры";
     }
 
-    // ───────────────────────── Кнопки ─────────────────────────
+    // ───────────────────────── Кнопки страницы ─────────────────────────
 
     private void Back_Click(object sender, RoutedEventArgs e) => BackRequested?.Invoke();
 
@@ -214,154 +218,214 @@ public partial class GameDetailsView : UserControl
         }
     }
 
+    // ───────────────────────── Запуск ─────────────────────────
+
     private void LaunchGame_Click(object sender, RoutedEventArgs e)
     {
         if (_game is null)
             return;
 
+        GameInfo game = _game;
+
         try
         {
-            string arguments = LaunchArgumentsTextBox.Text.Trim();
-            bool useAboveNormalPriority = AboveNormalPriorityCheckBox.IsChecked == true;
+            // Перед запуском применяем и сохраняем профиль: игре нужны актуальные настройки Windows.
+            ApplyProfileAndSave();
 
-            SaveSettings();
+            string arguments = _settings.LaunchArguments;
+
+            // Сообщения слежения приходят из фона; показываем их, только если страница всё ещё этой игры.
+            var report = new Progress<string>(message =>
+            {
+                if (ReferenceEquals(_game, game))
+                    OptimizationStatusText.Text = message;
+            });
 
             // Steam-игры запускаем через клиент: AppId известен из манифеста, гонки с загрузкой описания нет.
-            if (_game.Platform == Platforms.Steam && !string.IsNullOrWhiteSpace(_game.AppId))
+            if (game.Platform == Platforms.Steam && !string.IsNullOrWhiteSpace(game.AppId))
             {
-                string steamUri = $"steam://run/{_game.AppId}";
+                string steamUri = $"steam://run/{game.AppId}";
 
                 if (arguments.Length > 0)
                     steamUri += "//" + Uri.EscapeDataString(arguments);
 
                 Process.Start(new ProcessStartInfo { FileName = steamUri, UseShellExecute = true });
-
                 WindowStatusText.Text = "Команда запуска передана Steam";
-                OptimizationStatusText.Text = useAboveNormalPriority
-                    ? "Приоритет Steam-игры автоматически не изменён."
-                    : "Игра запущена без изменения приоритета.";
-                return;
+            }
+            else
+            {
+                string? executable = ExecutableLocator.Resolve(game);
+
+                if (executable is null)
+                {
+                    MessageBox.Show(
+                        "Не удалось найти exe-файл игры. Откройте папку игры и запустите её вручную.",
+                        "Запуск невозможен",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
+                    return;
+                }
+
+                Process.Start(new ProcessStartInfo
+                {
+                    FileName = executable,
+                    Arguments = arguments,
+                    WorkingDirectory = Path.GetDirectoryName(executable)!,
+                    UseShellExecute = true
+                });
+
+                WindowStatusText.Text = "Игра запущена";
             }
 
-            string? executable = ExecutableLocator.Resolve(_game);
-
-            if (executable is null)
-            {
-                MessageBox.Show(
-                    "Не удалось найти exe-файл игры. Откройте папку игры и запустите её вручную.",
-                    "Запуск невозможен",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                return;
-            }
-
-            Process? process = Process.Start(new ProcessStartInfo
-            {
-                FileName = executable,
-                Arguments = arguments,
-                WorkingDirectory = Path.GetDirectoryName(executable)!,
-                UseShellExecute = true
-            });
-
-            WindowStatusText.Text = "Игра запущена";
-
-            if (process is null)
-            {
-                OptimizationStatusText.Text = "Не удалось получить процесс игры.";
-                return;
-            }
-
-            if (!useAboveNormalPriority)
-            {
-                OptimizationStatusText.Text = "Игра запущена без изменения приоритета.";
-                return;
-            }
-
-            try
-            {
-                process.PriorityClass = ProcessPriorityClass.AboveNormal;
-                OptimizationStatusText.Text = "Для процесса игры установлен приоритет «Выше обычного».";
-            }
-            catch (Exception ex)
-            {
-                AppLog.Warn("Не удалось изменить приоритет процесса", ex);
-                OptimizationStatusText.Text = "Игра запущена, но приоритет изменить не удалось.";
-            }
+            if (_settings.AboveNormalPriority || _settings.HighPerformancePowerPlan)
+                GameSessionService.Current.Start(game, _settings, report);
+            else
+                OptimizationStatusText.Text = "Игра запущена без изменения приоритета и электропитания.";
         }
         catch (Exception ex)
         {
-            AppLog.Error($"Не удалось запустить игру: {_game.Name}", ex);
+            AppLog.Error($"Не удалось запустить игру: {game.Name}", ex);
             MessageBox.Show(ex.Message, "Не удалось запустить игру", MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
 
-    // ───────────────────────── Настройки игры ─────────────────────────
+    // ───────────────────────── Профиль оптимизации ─────────────────────────
 
-    private void LoadSettings(GameInfo game)
+    private void LoadProfile(GameInfo game)
     {
+        _executables = ExecutableLocator.FindAll(game);
+        _settings = new GameSettings();
+        SettingsStatusText.Text = "Профиль ещё не применялся";
+
+        try
+        {
+            GameSettings? saved = _settingsStore.Load(game);
+
+            if (saved is not null)
+            {
+                _settings = saved;
+                SettingsStatusText.Text = "Загружен сохранённый профиль";
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"Не удалось загрузить профиль: {game.Name}", ex);
+            SettingsStatusText.Text = "Не удалось загрузить сохранённый профиль";
+        }
+
+        LaunchArgumentsTextBox.Text = _settings.LaunchArguments;
+        AboveNormalPriorityCheckBox.IsChecked = _settings.AboveNormalPriority;
+        PowerPlanCheckBox.IsChecked = _settings.HighPerformancePowerPlan;
+
+        bool hasExecutables = _executables.Count > 0;
+        GpuCheckBox.IsEnabled = hasExecutables;
+        FullscreenCheckBox.IsEnabled = hasExecutables;
+
+        TweakTargetsText.Text = hasExecutables
+            ? "Профиль применяется к файлам: " + string.Join(", ", _executables.Select(path => Path.GetFileName(path)))
+            : "Exe-файл игры не найден, поэтому настройки видеокарты и полноэкранного режима недоступны.";
+
+        RefreshTweakCheckboxes();
+    }
+
+    /// <summary>Видеокарта и полноэкранный режим хранятся в реестре, поэтому показываем их реальное состояние.</summary>
+    private void RefreshTweakCheckboxes()
+    {
+        GpuCheckBox.IsChecked = false;
+        FullscreenCheckBox.IsChecked = false;
+
+        if (_executables.Count == 0)
+            return;
+
+        try
+        {
+            TweakState state = _tweaks.ReadState(_executables);
+
+            GpuCheckBox.IsChecked = state.AllGpuHighPerformance;
+            FullscreenCheckBox.IsChecked = state.AllFullscreenDisabled;
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn("Не удалось прочитать настройки Windows", ex);
+        }
+    }
+
+    private void CollectSettings()
+    {
+        _settings.LaunchArguments = LaunchArgumentsTextBox.Text.Trim();
+        _settings.AboveNormalPriority = AboveNormalPriorityCheckBox.IsChecked == true;
+        _settings.HighPerformancePowerPlan = PowerPlanCheckBox.IsChecked == true;
+        _settings.HighPerformanceGpu = GpuCheckBox.IsChecked == true;
+        _settings.DisableFullscreenOptimizations = FullscreenCheckBox.IsChecked == true;
+    }
+
+    private void ApplyProfile_Click(object sender, RoutedEventArgs e) => ApplyProfileAndSave();
+
+    private void ApplyProfileAndSave()
+    {
+        if (_game is null)
+            return;
+
+        CollectSettings();
+
+        var errors = new List<string>();
+
+        if (_executables.Count > 0 || _settings.TweakBackups.Count > 0)
+            errors.AddRange(_tweaks.ApplyProfile(_executables, _settings));
+
+        try
+        {
+            _settingsStore.Save(_game, _settings);
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"Не удалось сохранить профиль: {_game.Name}", ex);
+            errors.Add("не удалось сохранить профиль: " + ex.Message);
+        }
+
+        RefreshTweakCheckboxes();
+
+        SettingsStatusText.Text = errors.Count == 0
+            ? "Профиль применён и сохранён."
+            : "Профиль применён не полностью: " + string.Join("; ", errors);
+    }
+
+    private void RevertProfile_Click(object sender, RoutedEventArgs e)
+    {
+        if (_game is null)
+            return;
+
+        List<string> errors = _tweaks.RevertAll(_settings);
+
+        try
+        {
+            if (_settings.TweakBackups.Count == 0)
+            {
+                _settingsStore.Delete(_game);
+                _settings = new GameSettings();
+            }
+            else
+            {
+                // Часть значений вернуть не удалось: оставляем резервные копии, чтобы повторить попытку.
+                _settings.LaunchArguments = string.Empty;
+                _settings.AboveNormalPriority = false;
+                _settings.HighPerformancePowerPlan = false;
+                _settingsStore.Save(_game, _settings);
+            }
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"Не удалось сбросить профиль: {_game.Name}", ex);
+            errors.Add(ex.Message);
+        }
+
         LaunchArgumentsTextBox.Text = string.Empty;
         AboveNormalPriorityCheckBox.IsChecked = false;
-        SettingsStatusText.Text = "Настройки ещё не сохранены";
+        PowerPlanCheckBox.IsChecked = false;
+        RefreshTweakCheckboxes();
 
-        try
-        {
-            GameSettings? settings = _settingsStore.Load(game);
-
-            if (settings is null)
-                return;
-
-            LaunchArgumentsTextBox.Text = settings.LaunchArguments;
-            AboveNormalPriorityCheckBox.IsChecked = settings.AboveNormalPriority;
-            SettingsStatusText.Text = "Загружены сохранённые настройки";
-        }
-        catch (Exception ex)
-        {
-            AppLog.Warn($"Не удалось загрузить настройки: {game.Name}", ex);
-            SettingsStatusText.Text = "Не удалось загрузить сохранённые настройки";
-        }
-    }
-
-    private void SaveSettings_Click(object sender, RoutedEventArgs e) => SaveSettings();
-
-    private void SaveSettings()
-    {
-        if (_game is null)
-            return;
-
-        try
-        {
-            _settingsStore.Save(_game, new GameSettings
-            {
-                LaunchArguments = LaunchArgumentsTextBox.Text.Trim(),
-                AboveNormalPriority = AboveNormalPriorityCheckBox.IsChecked == true
-            });
-
-            SettingsStatusText.Text = "Настройки сохранены";
-        }
-        catch (Exception ex)
-        {
-            AppLog.Warn($"Не удалось сохранить настройки: {_game.Name}", ex);
-            SettingsStatusText.Text = "Не удалось сохранить настройки: " + ex.Message;
-        }
-    }
-
-    private void ResetSettings_Click(object sender, RoutedEventArgs e)
-    {
-        if (_game is null)
-            return;
-
-        try
-        {
-            _settingsStore.Delete(_game);
-
-            LaunchArgumentsTextBox.Text = string.Empty;
-            AboveNormalPriorityCheckBox.IsChecked = false;
-            SettingsStatusText.Text = "Настройки сброшены";
-        }
-        catch (Exception ex)
-        {
-            AppLog.Warn($"Не удалось сбросить настройки: {_game.Name}", ex);
-            SettingsStatusText.Text = "Не удалось сбросить настройки: " + ex.Message;
-        }
+        SettingsStatusText.Text = errors.Count == 0
+            ? "Профиль сброшен: настройки Windows возвращены к исходным."
+            : "Профиль сброшен не полностью: " + string.Join("; ", errors);
     }
 }

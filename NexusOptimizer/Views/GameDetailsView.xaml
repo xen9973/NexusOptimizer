@@ -149,35 +149,88 @@
                     </StackPanel>
                 </Border>
 
-                <!-- Запуск и оптимизация -->
+                <!-- Оптимизация игры -->
                 <Border Style="{StaticResource PanelCard}" Margin="0,0,0,8">
                     <StackPanel HorizontalAlignment="Left" MaxWidth="780">
-                        <TextBlock Text="Параметры запуска" Style="{StaticResource SectionTitleText}"/>
+                        <TextBlock Text="Оптимизация игры" Style="{StaticResource SectionTitleText}"/>
                         <TextBlock Style="{StaticResource MutedText}"
                                    TextWrapping="Wrap"
                                    LineHeight="20"
-                                   Margin="0,8,0,16"
-                                   Text="Настройки хранятся отдельно для каждой игры. Программа не меняет системные службы и BIOS, а повышенный приоритет не гарантирует рост FPS."/>
+                                   Margin="0,8,0,0"
+                                   Text="Профиль применяется к файлам игры, запускать её для этого не нужно. Он действует только на эту игру, ничего не меняет в системе и обратим: кнопка «Вернуть как было» восстанавливает исходные значения. Прирост FPS не гарантирован."/>
+                        <TextBlock x:Name="TweakTargetsText"
+                                   Style="{StaticResource MutedText}"
+                                   FontSize="11"
+                                   TextWrapping="Wrap"
+                                   Margin="0,8,0,0"/>
+
+                        <CheckBox x:Name="GpuCheckBox" Margin="0,18,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Производительная видеокарта"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Style="{StaticResource MutedText}"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Margin="0,2,0,0"
+                                           Text="Windows будет запускать игру на самой мощной видеокарте. Это важно для ноутбуков и ПК с двумя видеокартами, а если она одна, ничего не изменится."/>
+                            </StackPanel>
+                        </CheckBox>
+
+                        <CheckBox x:Name="FullscreenCheckBox" Margin="0,14,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Отключить полноэкранные оптимизации Windows"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Style="{StaticResource MutedText}"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Margin="0,2,0,0"
+                                           Text="Игра будет работать в обычном полноэкранном режиме. Иногда это уменьшает задержку ввода, иногда ничего не меняет."/>
+                            </StackPanel>
+                        </CheckBox>
+
+                        <CheckBox x:Name="AboveNormalPriorityCheckBox" Margin="0,14,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Повышенный приоритет процессов игры"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Style="{StaticResource MutedText}"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Margin="0,2,0,0"
+                                           Text="Действует, когда игра запущена кнопкой «Запустить игру» в этой программе. Работает и для игр Steam: программа дождётся процесса игры."/>
+                            </StackPanel>
+                        </CheckBox>
+
+                        <CheckBox x:Name="PowerPlanCheckBox" Margin="0,14,0,0">
+                            <StackPanel>
+                                <TextBlock Text="Схема электропитания «Высокая производительность»"
+                                           FontWeight="SemiBold"
+                                           Foreground="{StaticResource TextBrush}"/>
+                                <TextBlock Style="{StaticResource MutedText}"
+                                           FontSize="12"
+                                           TextWrapping="Wrap"
+                                           Margin="0,2,0,0"
+                                           Text="Включается, когда запускается игра, и возвращается после её закрытия или закрытия программы. На некоторых ноутбуках такой схемы нет."/>
+                            </StackPanel>
+                        </CheckBox>
 
                         <TextBlock Text="Аргументы запуска"
                                    FontSize="12"
                                    FontWeight="SemiBold"
                                    Foreground="{StaticResource BodyTextBrush}"
-                                   Margin="0,0,0,6"/>
+                                   Margin="0,20,0,6"/>
                         <TextBox x:Name="LaunchArgumentsTextBox"/>
 
-                        <CheckBox x:Name="AboveNormalPriorityCheckBox" Margin="0,16,0,0">
-                            <TextBlock TextWrapping="Wrap"
-                                       Text="Повышенный приоритет процесса при прямом запуске. Для игр Steam запуск идёт через клиент, и приоритет не меняется."/>
-                        </CheckBox>
-
-                        <WrapPanel Margin="0,18,0,0">
-                            <Button Content="Сохранить настройки"
-                                    Click="SaveSettings_Click"
-                                    Padding="16,10"
+                        <WrapPanel Margin="0,20,0,0">
+                            <Button Content="Применить профиль"
+                                    Click="ApplyProfile_Click"
+                                    Style="{StaticResource AccentButton}"
+                                    Padding="18,10"
                                     Margin="0,0,8,0"/>
-                            <Button Content="Сбросить настройки"
-                                    Click="ResetSettings_Click"
+                            <Button Content="Вернуть как было"
+                                    Click="RevertProfile_Click"
                                     Padding="16,10"/>
                         </WrapPanel>
 

@@ -1,6 +1,8 @@
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using NexusOptimizer.Models;
+using NexusOptimizer.Services;
 using NexusOptimizer.ViewModels;
 
 namespace NexusOptimizer;
@@ -18,8 +20,20 @@ public partial class MainWindow : Window
         LibraryPage.GameOpened += ShowGame;
         GamePage.BackRequested += ShowLibrary;
 
-        Loaded += async (_, _) => await _viewModel.InitializeAsync();
-        Closing += (_, _) => _viewModel.Shutdown();
+        Loaded += async (_, _) =>
+        {
+            // Если прошлый запуск закрылся, не вернув схему электропитания, возвращаем её.
+            _ = Task.Run(() => GameSessionService.Current.RestoreLeftoverPowerPlan());
+
+            await _viewModel.InitializeAsync();
+        };
+
+        Closing += (_, _) =>
+        {
+            _viewModel.Shutdown();
+            CleanupPage.Shutdown();
+            GameSessionService.Current.StopAll();
+        };
     }
 
     private void Nav_Click(object sender, RoutedEventArgs e)
