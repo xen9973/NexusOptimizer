@@ -49,6 +49,12 @@ public partial class LibraryView : UserControl
             viewModel.CopyGamePath(game);
     }
 
+    private void Favorite_Click(object sender, RoutedEventArgs e)
+    {
+        if (ViewModel is { } viewModel && sender is Button { Tag: GameInfo game })
+            viewModel.ToggleFavorite(game);
+    }
+
     private void GameCard_Click(object sender, MouseButtonEventArgs e)
     {
         if (sender is Border { DataContext: GameInfo game })

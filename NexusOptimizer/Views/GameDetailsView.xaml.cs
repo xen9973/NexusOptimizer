@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -10,6 +12,7 @@ using System.Windows.Controls;
 using System.Windows.Media.Imaging;
 using NexusOptimizer.Models;
 using NexusOptimizer.Services;
+using NexusOptimizer.ViewModels;
 
 namespace NexusOptimizer.Views;
 
@@ -18,12 +21,15 @@ public partial class GameDetailsView : UserControl
     private readonly GameDetailsService _detailsService = new();
     private readonly GameSettingsStore _settingsStore = new();
     private readonly GameTweaksService _tweaks = new();
+    private readonly ImageCacheService _imageCache = new();
+    private readonly ObservableCollection<OptimizationActionItem> _actionItems = [];
 
     private GameInfo? _game;
     private GameSettings _settings = new();
     private IReadOnlyList<string> _executables = [];
     private string? _storeUrl;
     private CancellationTokenSource? _loadCts;
+    private bool _updatingProfile;
 
     /// <summary>Пользователь вернулся к списку игр.</summary>
     public event Action? BackRequested;
@@ -31,6 +37,9 @@ public partial class GameDetailsView : UserControl
     public GameDetailsView()
     {
         InitializeComponent();
+
+        ActionsList.ItemsSource = _actionItems;
+        ProfileList.ItemsSource = OptimizationCatalog.Profiles.Select(profile => profile.Name).ToList();
 
         // Лента миниатюр иначе «съедает» прокрутку колесом, и страница перестаёт листаться.
         ScreenshotList.PreviewMouseWheel += (_, e) =>
@@ -119,8 +128,7 @@ public partial class GameDetailsView : UserControl
             ? details.Description
             : details.Notice ?? "Описание для этой игры отсутствует.";
 
-        if (Uri.TryCreate(details.HeaderImageUrl, UriKind.Absolute, out Uri? headerUri))
-            HeaderImage.Source = new BitmapImage(headerUri);
+        ShowHeaderImage(details.HeaderImageUrl);
 
         if (details.Genres.Count > 0)
         {
@@ -277,6 +285,8 @@ public partial class GameDetailsView : UserControl
                 WindowStatusText.Text = "Игра запущена";
             }
 
+            GameUserDataStore.Current.RecordLaunch(game);
+
             if (_settings.AboveNormalPriority || _settings.HighPerformancePowerPlan)
                 GameSessionService.Current.Start(game, _settings, report);
             else
@@ -286,6 +296,45 @@ public partial class GameDetailsView : UserControl
         {
             AppLog.Error($"Не удалось запустить игру: {game.Name}", ex);
             MessageBox.Show(ex.Message, "Не удалось запустить игру", MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    // ───────────────────────── Обложка ─────────────────────────
+
+    private void ShowHeaderImage(string? url)
+    {
+        if (!Uri.TryCreate(url, UriKind.Absolute, out Uri? uri))
+            return;
+
+        string? cachedPath = _imageCache.TryGetCachedPath(url!);
+
+        if (cachedPath is not null)
+        {
+            HeaderImage.Source = LoadBitmap(cachedPath) ?? new BitmapImage(uri);
+            return;
+        }
+
+        // Показываем картинку из сети сразу и сохраняем копию: в следующий раз она откроется без интернета.
+        HeaderImage.Source = new BitmapImage(uri);
+        _ = _imageCache.DownloadAsync(url!);
+    }
+
+    private static BitmapImage? LoadBitmap(string path)
+    {
+        try
+        {
+            var bitmap = new BitmapImage();
+            bitmap.BeginInit();
+            bitmap.UriSource = new Uri(path, UriKind.Absolute);
+            bitmap.CacheOption = BitmapCacheOption.OnLoad;
+            bitmap.EndInit();
+            bitmap.Freeze();
+            return bitmap;
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn($"Не удалось открыть сохранённую картинку: {path}", ex);
+            return null;
         }
     }
 
@@ -314,59 +363,258 @@ public partial class GameDetailsView : UserControl
         }
 
         LaunchArgumentsTextBox.Text = _settings.LaunchArguments;
-        AboveNormalPriorityCheckBox.IsChecked = _settings.AboveNormalPriority;
-        PowerPlanCheckBox.IsChecked = _settings.HighPerformancePowerPlan;
 
         bool hasExecutables = _executables.Count > 0;
-        GpuCheckBox.IsEnabled = hasExecutables;
-        FullscreenCheckBox.IsEnabled = hasExecutables;
 
         TweakTargetsText.Text = hasExecutables
             ? "Профиль применяется к файлам: " + string.Join(", ", _executables.Select(path => Path.GetFileName(path)))
-            : "Exe-файл игры не найден, поэтому настройки видеокарты и полноэкранного режима недоступны.";
+            : "Exe-файл игры не найден, поэтому действия с видеокартой и полноэкранным режимом недоступны.";
 
-        RefreshTweakCheckboxes();
-    }
+        // Видеокарта и полноэкранный режим хранятся в реестре, поэтому берём их реальное состояние.
+        TweakState? state = ReadTweakState();
 
-    /// <summary>Видеокарта и полноэкранный режим хранятся в реестре, поэтому показываем их реальное состояние.</summary>
-    private void RefreshTweakCheckboxes()
-    {
-        GpuCheckBox.IsChecked = false;
-        FullscreenCheckBox.IsChecked = false;
+        if (state is not null)
+        {
+            _settings.HighPerformanceGpu = state.AllGpuHighPerformance;
+            _settings.DisableFullscreenOptimizations = state.AllFullscreenDisabled;
+        }
+        else if (!hasExecutables)
+        {
+            _settings.HighPerformanceGpu = false;
+            _settings.DisableFullscreenOptimizations = false;
+        }
 
-        if (_executables.Count == 0)
-            return;
+        _updatingProfile = true;
 
         try
         {
-            TweakState state = _tweaks.ReadState(_executables);
+            foreach (OptimizationActionItem old in _actionItems)
+                old.PropertyChanged -= ActionItem_PropertyChanged;
 
-            GpuCheckBox.IsChecked = state.AllGpuHighPerformance;
-            FullscreenCheckBox.IsChecked = state.AllFullscreenDisabled;
+            _actionItems.Clear();
+
+            foreach (OptimizationActionDefinition definition in OptimizationCatalog.Actions)
+            {
+                var item = new OptimizationActionItem(definition)
+                {
+                    IsSelected = definition.Get(_settings)
+                };
+
+                item.PropertyChanged += ActionItem_PropertyChanged;
+                _actionItems.Add(item);
+            }
+        }
+        finally
+        {
+            _updatingProfile = false;
+        }
+
+        RefreshActionStates(state);
+        SyncProfileSelection();
+    }
+
+    private TweakState? ReadTweakState()
+    {
+        if (_executables.Count == 0)
+            return null;
+
+        try
+        {
+            return _tweaks.ReadState(_executables);
         }
         catch (Exception ex)
         {
             AppLog.Warn("Не удалось прочитать настройки Windows", ex);
+            return null;
         }
     }
+
+    /// <summary>Обновляет у каждого действия доступность и текст «Сейчас…».</summary>
+    private void RefreshActionStates(TweakState? state)
+    {
+        bool hasExecutables = _executables.Count > 0;
+
+        foreach (OptimizationActionItem item in _actionItems)
+        {
+            OptimizationActionDefinition definition = item.Definition;
+
+            if (definition.NeedsExecutable && !hasExecutables)
+            {
+                item.IsAvailable = false;
+                item.IsActive = false;
+                item.StateText = "Недоступно: exe-файл игры не найден";
+                continue;
+            }
+
+            item.IsAvailable = true;
+
+            if (definition.RegistryCount is { } countApplied)
+            {
+                if (state is null)
+                {
+                    item.IsActive = false;
+                    item.StateText = "Не удалось прочитать состояние Windows";
+                    continue;
+                }
+
+                int on = countApplied(state);
+                int total = state.ExecutableCount;
+
+                item.IsActive = on > 0;
+                item.StateText = on == 0
+                    ? "Сейчас в Windows: выключено"
+                    : on == total
+                        ? "Сейчас в Windows: включено"
+                        : $"Сейчас в Windows: частично ({on} из {total} файлов)";
+            }
+            else
+            {
+                bool saved = definition.Get(_settings);
+
+                item.IsActive = saved;
+                item.StateText = saved
+                    ? "Сохранено в профиле: включено"
+                    : "Сохранено в профиле: выключено";
+            }
+        }
+    }
+
+    /// <summary>После применения показывает у каждого действия, что получилось.</summary>
+    private void UpdateResults(TweakState? state)
+    {
+        foreach (OptimizationActionItem item in _actionItems)
+        {
+            if (!item.IsAvailable)
+            {
+                item.ResultText = string.Empty;
+                continue;
+            }
+
+            if (item.Definition.RegistryCount is { } countApplied)
+            {
+                if (state is null)
+                {
+                    item.ResultText = "Не удалось проверить результат.";
+                    continue;
+                }
+
+                int on = countApplied(state);
+
+                item.ResultText = item.IsSelected
+                    ? on == state.ExecutableCount
+                        ? $"Применено к файлам игры: {state.ExecutableCount}."
+                        : "Применено не полностью, подробности в сообщении ниже."
+                    : on == 0
+                        ? "Выключено, исходное значение возвращено."
+                        : "Не удалось полностью вернуть исходное значение.";
+            }
+            else
+            {
+                item.ResultText = item.IsSelected
+                    ? "Сохранено: сработает при запуске игры кнопкой «Запустить игру»."
+                    : "Выключено.";
+            }
+        }
+    }
+
+    // ───────────────────────── Выбор профиля ─────────────────────────
+
+    private void ProfileList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (_updatingProfile || ProfileList.SelectedItem is not string name)
+            return;
+
+        OptimizationProfileDefinition profile = OptimizationCatalog.GetProfile(name);
+        ProfileDescriptionText.Text = profile.Description;
+
+        // «Пользовательский» набор не меняет отмеченные действия.
+        if (profile.ActionIds is null)
+            return;
+
+        _updatingProfile = true;
+
+        try
+        {
+            int skipped = 0;
+
+            foreach (OptimizationActionItem item in _actionItems)
+            {
+                bool wanted = profile.ActionIds.Contains(item.Definition.Id);
+
+                if (wanted && !item.IsAvailable)
+                    skipped++;
+
+                item.IsSelected = wanted && item.IsAvailable;
+            }
+
+            if (skipped > 0)
+                ProfileDescriptionText.Text += " Недоступные действия пропущены.";
+        }
+        finally
+        {
+            _updatingProfile = false;
+        }
+    }
+
+    private void ActionItem_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName == nameof(OptimizationActionItem.IsSelected) && !_updatingProfile)
+            SyncProfileSelection();
+    }
+
+    /// <summary>Подсвечивает профиль, совпадающий с отмеченными действиями, иначе «Пользовательский».</summary>
+    private void SyncProfileSelection()
+    {
+        string name = OptimizationCatalog.MatchProfile(
+            _actionItems.Where(item => item.IsSelected).Select(item => item.Definition.Id));
+
+        _updatingProfile = true;
+
+        try
+        {
+            ProfileList.SelectedItem = name;
+        }
+        finally
+        {
+            _updatingProfile = false;
+        }
+
+        ProfileDescriptionText.Text = OptimizationCatalog.GetProfile(name).Description;
+    }
+
+    // ───────────────────────── Применение и отмена ─────────────────────────
 
     private void CollectSettings()
     {
         _settings.LaunchArguments = LaunchArgumentsTextBox.Text.Trim();
-        _settings.AboveNormalPriority = AboveNormalPriorityCheckBox.IsChecked == true;
-        _settings.HighPerformancePowerPlan = PowerPlanCheckBox.IsChecked == true;
-        _settings.HighPerformanceGpu = GpuCheckBox.IsChecked == true;
-        _settings.DisableFullscreenOptimizations = FullscreenCheckBox.IsChecked == true;
+
+        foreach (OptimizationActionItem item in _actionItems)
+            item.Definition.Set(_settings, item.IsSelected && item.IsAvailable);
     }
 
     private void ApplyProfile_Click(object sender, RoutedEventArgs e) => ApplyProfileAndSave();
 
-    private void ApplyProfileAndSave()
+    private void RevertAction_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button { Tag: OptimizationActionItem item })
+            ApplyProfileAndSave(item);
+    }
+
+    /// <param name="revertOnly">Если задано, отменяется только это действие, остальное остаётся как сохранено.</param>
+    private void ApplyProfileAndSave(OptimizationActionItem? revertOnly = null)
     {
         if (_game is null)
             return;
 
-        CollectSettings();
+        if (revertOnly is null)
+        {
+            CollectSettings();
+        }
+        else
+        {
+            revertOnly.Definition.Set(_settings, false);
+            revertOnly.IsSelected = false;
+        }
 
         var errors = new List<string>();
 
@@ -383,11 +631,16 @@ public partial class GameDetailsView : UserControl
             errors.Add("не удалось сохранить профиль: " + ex.Message);
         }
 
-        RefreshTweakCheckboxes();
+        TweakState? state = ReadTweakState();
+        RefreshActionStates(state);
+        UpdateResults(state);
 
-        SettingsStatusText.Text = errors.Count == 0
-            ? "Профиль применён и сохранён."
-            : "Профиль применён не полностью: " + string.Join("; ", errors);
+        if (errors.Count > 0)
+            SettingsStatusText.Text = "Профиль применён не полностью: " + string.Join("; ", errors);
+        else if (revertOnly is not null)
+            SettingsStatusText.Text = $"Действие «{revertOnly.Title}» отменено.";
+        else
+            SettingsStatusText.Text = "Профиль применён и сохранён.";
     }
 
     private void RevertProfile_Click(object sender, RoutedEventArgs e)
@@ -402,7 +655,6 @@ public partial class GameDetailsView : UserControl
             if (_settings.TweakBackups.Count == 0)
             {
                 _settingsStore.Delete(_game);
-                _settings = new GameSettings();
             }
             else
             {
@@ -419,13 +671,10 @@ public partial class GameDetailsView : UserControl
             errors.Add(ex.Message);
         }
 
-        LaunchArgumentsTextBox.Text = string.Empty;
-        AboveNormalPriorityCheckBox.IsChecked = false;
-        PowerPlanCheckBox.IsChecked = false;
-        RefreshTweakCheckboxes();
+        LoadProfile(_game);
 
         SettingsStatusText.Text = errors.Count == 0
-            ? "Профиль сброшен: настройки Windows возвращены к исходным."
-            : "Профиль сброшен не полностью: " + string.Join("; ", errors);
+            ? "Всё возвращено: настройки Windows снова исходные, профиль удалён."
+            : "Возвращено не полностью: " + string.Join("; ", errors);
     }
 }

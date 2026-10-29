@@ -16,4 +16,12 @@ public static class AppPaths
     public static string DetailsCacheDirectory => Path.Combine(Root, "cache", "details");
 
     public static string LogFile => Path.Combine(Root, "logs", "app.log");
+
+    public static string ImageCacheDirectory => Path.Combine(Root, "cache", "images");
+
+    public static string UserDataFile => Path.Combine(Root, "user-data.json");
+
+    public static string CleanupSettingsFile => Path.Combine(Root, "cleanup-settings.json");
+
+    public static string CleanupLogDirectory => Path.Combine(Root, "logs", "cleanup");
 }

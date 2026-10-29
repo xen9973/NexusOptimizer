@@ -36,6 +36,11 @@ public readonly record struct CleanupSize(long Bytes, int Files);
 
 public readonly record struct CleanupOutcome(long FreedBytes, int DeletedFiles, int SkippedFiles);
 
+public sealed record CleanupPreviewItem(string Path, long Bytes);
+
+/// <summary>Самые крупные файлы категории и итог по ней.</summary>
+public sealed record CleanupPreview(IReadOnlyList<CleanupPreviewItem> Items, int TotalFiles, long TotalBytes);
+
 /// <summary>
 /// Поиск и удаление временных файлов. Работает только с заранее известными папками,
 /// не заходит в ссылки и точки соединения, не трогает скрытые и системные файлы.
@@ -50,6 +55,9 @@ public sealed class CleanupService
     };
 
     public IReadOnlyList<CleanupDefinition> Definitions { get; } = BuildDefinitions();
+
+    /// <summary>Папки, которые очистка обходит стороной (задаёт пользователь).</summary>
+    public IReadOnlyList<string> ExcludedFolders { get; set; } = [];
 
     private static IReadOnlyList<CleanupDefinition> BuildDefinitions()
     {
@@ -112,15 +120,31 @@ public sealed class CleanupService
         ];
     }
 
-    public Task<CleanupSize> MeasureAsync(CleanupDefinition definition, CancellationToken token) =>
-        Task.Run(() => Measure(definition, token), token);
+    public Task<CleanupSize> MeasureAsync(CleanupDefinition definition, CancellationToken token)
+    {
+        string[] excluded = NormalizeExcluded();
+        return Task.Run(() => Measure(definition, excluded, token), token);
+    }
 
-    public Task<CleanupOutcome> CleanAsync(CleanupDefinition definition, CancellationToken token) =>
-        Task.Run(() => Clean(definition, token), token);
+    public Task<CleanupPreview> PreviewAsync(CleanupDefinition definition, int limit, CancellationToken token)
+    {
+        string[] excluded = NormalizeExcluded();
+        return Task.Run(() => Preview(definition, excluded, limit, token), token);
+    }
+
+    /// <param name="onDeleted">Вызывается для каждого удалённого файла (путь и размер): нужен для журнала.</param>
+    public Task<CleanupOutcome> CleanAsync(
+        CleanupDefinition definition,
+        CancellationToken token,
+        Action<string, long>? onDeleted = null)
+    {
+        string[] excluded = NormalizeExcluded();
+        return Task.Run(() => Clean(definition, excluded, token, onDeleted), token);
+    }
 
     // ───────────────────────── Размер ─────────────────────────
 
-    private static CleanupSize Measure(CleanupDefinition definition, CancellationToken token)
+    private static CleanupSize Measure(CleanupDefinition definition, string[] excluded, CancellationToken token)
     {
         if (definition.Kind == CleanupKind.RecycleBin)
             return MeasureRecycleBin();
@@ -130,7 +154,7 @@ public sealed class CleanupService
 
         foreach (string folder in ValidFolders(definition))
         {
-            foreach (FileInfo file in GetEligibleFiles(folder, definition.MinAge, token))
+            foreach (FileInfo file in GetEligibleFiles(folder, definition.MinAge, excluded, token))
             {
                 bytes += SafeLength(file);
                 files++;
@@ -140,12 +164,59 @@ public sealed class CleanupService
         return new CleanupSize(bytes, files);
     }
 
-    // ───────────────────────── Удаление ─────────────────────────
+    // ───────────────────────── Просмотр ─────────────────────────
 
-    private static CleanupOutcome Clean(CleanupDefinition definition, CancellationToken token)
+    private static CleanupPreview Preview(
+        CleanupDefinition definition,
+        string[] excluded,
+        int limit,
+        CancellationToken token)
     {
         if (definition.Kind == CleanupKind.RecycleBin)
-            return CleanRecycleBin();
+        {
+            CleanupSize recycleBin = MeasureRecycleBin();
+            return new CleanupPreview([], recycleBin.Files, recycleBin.Bytes);
+        }
+
+        var all = new List<CleanupPreviewItem>();
+        long totalBytes = 0;
+
+        foreach (string folder in ValidFolders(definition))
+        {
+            foreach (FileInfo file in GetEligibleFiles(folder, definition.MinAge, excluded, token))
+            {
+                long length = SafeLength(file);
+
+                totalBytes += length;
+                all.Add(new CleanupPreviewItem(file.FullName, length));
+            }
+        }
+
+        List<CleanupPreviewItem> top = all
+            .OrderByDescending(item => item.Bytes)
+            .Take(limit)
+            .ToList();
+
+        return new CleanupPreview(top, all.Count, totalBytes);
+    }
+
+    // ───────────────────────── Удаление ─────────────────────────
+
+    private static CleanupOutcome Clean(
+        CleanupDefinition definition,
+        string[] excluded,
+        CancellationToken token,
+        Action<string, long>? onDeleted)
+    {
+        if (definition.Kind == CleanupKind.RecycleBin)
+        {
+            CleanupOutcome recycleBin = CleanRecycleBin();
+
+            if (recycleBin.DeletedFiles > 0)
+                onDeleted?.Invoke($"[Корзина Windows] элементов: {recycleBin.DeletedFiles}", recycleBin.FreedBytes);
+
+            return recycleBin;
+        }
 
         long freed = 0;
         int deleted = 0;
@@ -153,7 +224,7 @@ public sealed class CleanupService
 
         foreach (string folder in ValidFolders(definition))
         {
-            foreach (FileInfo file in GetEligibleFiles(folder, definition.MinAge, token))
+            foreach (FileInfo file in GetEligibleFiles(folder, definition.MinAge, excluded, token))
             {
                 token.ThrowIfCancellationRequested();
 
@@ -164,10 +235,13 @@ public sealed class CleanupService
                     if ((file.Attributes & FileAttributes.ReadOnly) != 0)
                         file.Attributes = FileAttributes.Normal;
 
+                    string fullName = file.FullName;
+
                     file.Delete();
 
                     freed += length;
                     deleted++;
+                    onDeleted?.Invoke(fullName, length);
                 }
                 catch (Exception ex) when (ex is IOException or UnauthorizedAccessException or System.Security.SecurityException)
                 {
@@ -176,13 +250,13 @@ public sealed class CleanupService
                 }
             }
 
-            DeleteEmptyDirectories(folder, definition.MinAge, token);
+            DeleteEmptyDirectories(folder, definition.MinAge, excluded, token);
         }
 
         return new CleanupOutcome(freed, deleted, skipped);
     }
 
-    private static void DeleteEmptyDirectories(string root, TimeSpan minAge, CancellationToken token)
+    private static void DeleteEmptyDirectories(string root, TimeSpan minAge, string[] excluded, CancellationToken token)
     {
         try
         {
@@ -198,6 +272,9 @@ public sealed class CleanupService
                 token.ThrowIfCancellationRequested();
 
                 if (minAge > TimeSpan.Zero && directory.LastWriteTimeUtc > threshold)
+                    continue;
+
+                if (IsExcluded(directory.FullName + Path.DirectorySeparatorChar, excluded))
                     continue;
 
                 try
@@ -290,7 +367,7 @@ public sealed class CleanupService
         }
     }
 
-    private static List<FileInfo> GetEligibleFiles(string folder, TimeSpan minAge, CancellationToken token)
+    private static List<FileInfo> GetEligibleFiles(string folder, TimeSpan minAge, string[] excluded, CancellationToken token)
     {
         var result = new List<FileInfo>();
         DateTime threshold = DateTime.UtcNow - minAge;
@@ -300,6 +377,9 @@ public sealed class CleanupService
             foreach (FileInfo file in new DirectoryInfo(folder).EnumerateFiles("*", Options))
             {
                 token.ThrowIfCancellationRequested();
+
+                if (IsExcluded(file.FullName, excluded))
+                    continue;
 
                 if (minAge > TimeSpan.Zero)
                 {
@@ -325,6 +405,32 @@ public sealed class CleanupService
 
         return result;
     }
+
+    /// <summary>Пути исключений с разделителем в конце: так «D:\Temp2» не считается внутри «D:\Temp».</summary>
+    private string[] NormalizeExcluded()
+    {
+        var result = new List<string>();
+
+        foreach (string folder in ExcludedFolders)
+        {
+            try
+            {
+                string full = Path.GetFullPath(folder).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar);
+
+                if (full.Length > 0)
+                    result.Add(full + Path.DirectorySeparatorChar);
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn($"Очистка: некорректное исключение {folder}", ex);
+            }
+        }
+
+        return result.ToArray();
+    }
+
+    private static bool IsExcluded(string path, string[] excluded) =>
+        excluded.Any(prefix => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
 
     private static long SafeLength(FileInfo file)
     {

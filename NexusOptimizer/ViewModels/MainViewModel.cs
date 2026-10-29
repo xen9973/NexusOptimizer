@@ -18,6 +18,9 @@ namespace NexusOptimizer.ViewModels;
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {
+    public const string SortByName = "По названию";
+    public const string SortByRecent = "Недавние";
+
     private readonly GameScanner _scanner = new();
     private readonly LibraryStore _store = new();
 
@@ -25,6 +28,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _status = "Готово к сканированию";
     private string _searchText = string.Empty;
     private string _selectedPlatform = Platforms.All;
+    private string _sortMode = SortByName;
+    private bool _showOnlyFavorites;
     private bool _isScanning;
     private bool _suspendCounts;
     private DateTime? _lastScanUtc;
@@ -36,12 +41,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public ObservableCollection<string> PlatformFilters { get; } =
         [Platforms.All, Platforms.Steam, Platforms.Epic, Platforms.Folder];
 
+    public ObservableCollection<string> SortModes { get; } = [SortByName, SortByRecent];
+
     public ICollectionView FilteredGames { get; }
 
     public MainViewModel()
     {
         FilteredGames = CollectionViewSource.GetDefaultView(Games);
         FilteredGames.Filter = FilterGame;
+        ApplySort();
 
         Games.CollectionChanged += (_, _) => RaiseCountsChanged();
         ExtraFolders.CollectionChanged += (_, _) => OnPropertyChanged(nameof(HasExtraFolders));
@@ -76,6 +84,29 @@ public sealed class MainViewModel : INotifyPropertyChanged
         set
         {
             if (SetField(ref _selectedPlatform, value))
+            {
+                FilteredGames.Refresh();
+                RaiseCountsChanged();
+            }
+        }
+    }
+
+    public string SortMode
+    {
+        get => _sortMode;
+        set
+        {
+            if (SetField(ref _sortMode, value))
+                ApplySort();
+        }
+    }
+
+    public bool ShowOnlyFavorites
+    {
+        get => _showOnlyFavorites;
+        set
+        {
+            if (SetField(ref _showOnlyFavorites, value))
             {
                 FilteredGames.Refresh();
                 RaiseCountsChanged();
@@ -358,6 +389,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         _suspendCounts = false;
 
+        GameUserDataStore.Current.Apply(Games);
+
         _lastScanUtc = data.LastScanUtc;
 
         if (Games.Count > 0)
@@ -384,6 +417,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         _suspendCounts = false;
 
+        GameUserDataStore.Current.Apply(Games);
+
         FilteredGames.Refresh();
         RaiseCountsChanged();
     }
@@ -409,6 +444,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
         if (!platformMatches)
             return false;
 
+        if (ShowOnlyFavorites && !game.IsFavorite)
+            return false;
+
         if (string.IsNullOrWhiteSpace(SearchText))
             return true;
 
@@ -416,6 +454,29 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         return game.Name.Contains(query, StringComparison.CurrentCultureIgnoreCase)
                || game.InstallPath.Contains(query, StringComparison.CurrentCultureIgnoreCase);
+    }
+
+    public void ToggleFavorite(GameInfo game)
+    {
+        GameUserDataStore.Current.SetFavorite(game, !game.IsFavorite);
+
+        // Обновляем вид: изменился фильтр «Только избранное».
+        FilteredGames.Refresh();
+        RaiseCountsChanged();
+    }
+
+    private void ApplySort()
+    {
+        FilteredGames.SortDescriptions.Clear();
+
+        if (SortMode == SortByRecent)
+        {
+            FilteredGames.SortDescriptions.Add(
+                new SortDescription(nameof(GameInfo.LastPlayedUtc), ListSortDirection.Descending));
+        }
+
+        FilteredGames.SortDescriptions.Add(
+            new SortDescription(nameof(GameInfo.Name), ListSortDirection.Ascending));
     }
 
     private void RaiseCountsChanged()

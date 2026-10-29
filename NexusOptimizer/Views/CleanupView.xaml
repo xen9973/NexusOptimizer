@@ -10,6 +10,7 @@
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -37,6 +38,12 @@
                         Padding="18,9"
                         Margin="0,0,10,0"
                         Visibility="{Binding IsBusy, Converter={StaticResource BoolToVisibility}}"/>
+                <Button Content="Журнал"
+                        Click="OpenLog_Click"
+                        ToolTip="Открыть папку с журналами очистки"
+                        Height="40"
+                        Padding="18,9"
+                        Margin="0,0,10,0"/>
                 <Button Content="Проанализировать"
                         Click="Analyze_Click"
                         IsEnabled="{Binding CanAnalyze}"
@@ -58,10 +65,67 @@
                    TextWrapping="Wrap"
                    LineHeight="19"
                    Margin="0,0,0,14"
-                   Text="Программа удаляет только файлы из временных папок и кэшей. Файлы, которые менялись меньше суток назад, и файлы, занятые другими программами, пропускаются. Перед удалением вы увидите итог и подтвердите его."/>
+                   Text="Программа удаляет только файлы из временных папок и кэшей. Файлы, которые менялись меньше суток назад, и файлы, занятые другими программами, пропускаются. Перед удалением вы увидите итог и подтвердите его, а каждый удалённый файл запишется в журнал."/>
+
+        <!-- Исключения -->
+        <StackPanel Grid.Row="2" Margin="0,0,0,12">
+            <WrapPanel>
+                <TextBlock Text="Исключения"
+                           Style="{StaticResource MutedText}"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="0,0,12,8"/>
+                <Button Content="Добавить папку-исключение"
+                        Click="AddExclusion_Click"
+                        Padding="14,7"
+                        Margin="0,0,12,8"/>
+                <TextBlock Text="Папки из этого списка очистка не трогает."
+                           Style="{StaticResource MutedText}"
+                           FontSize="12"
+                           VerticalAlignment="Center"
+                           Margin="0,0,0,8"
+                           Visibility="{Binding HasExcludedFolders, Converter={StaticResource BoolToVisibility}}"/>
+            </WrapPanel>
+
+            <ItemsControl ItemsSource="{Binding ExcludedFolders}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{StaticResource CardBrush}"
+                                BorderBrush="{StaticResource LineBrush}"
+                                BorderThickness="1"
+                                CornerRadius="8"
+                                Padding="10,3,3,3"
+                                Margin="0,0,8,8">
+                            <StackPanel Orientation="Horizontal">
+                                <TextBlock Text="{Binding}"
+                                           ToolTip="{Binding}"
+                                           MaxWidth="380"
+                                           FontSize="12"
+                                           Foreground="{StaticResource BodyTextBrush}"
+                                           TextTrimming="CharacterEllipsis"
+                                           VerticalAlignment="Center"/>
+                                <Button Content="✕"
+                                        Tag="{Binding}"
+                                        Click="RemoveExclusion_Click"
+                                        ToolTip="Убрать из исключений"
+                                        Background="Transparent"
+                                        Foreground="{StaticResource MutedBrush}"
+                                        Padding="8,3"
+                                        Margin="6,0,0,0"/>
+                            </StackPanel>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </StackPanel>
 
         <!-- Категории -->
-        <Border Grid.Row="2"
+        <Border Grid.Row="3"
                 Style="{StaticResource PanelCard}"
                 Padding="18,18,8,8">
             <ScrollViewer VerticalScrollBarVisibility="Auto"
@@ -102,7 +166,7 @@
                                     </StackPanel>
 
                                     <StackPanel Grid.Column="2"
-                                                MinWidth="120"
+                                                MinWidth="130"
                                                 VerticalAlignment="Top">
                                         <TextBlock Text="{Binding SizeText}"
                                                    FontSize="14"
@@ -114,6 +178,13 @@
                                                    FontSize="11"
                                                    TextAlignment="Right"
                                                    Margin="0,3,0,0"/>
+                                        <Button Content="Показать файлы"
+                                                Tag="{Binding}"
+                                                Click="Preview_Click"
+                                                IsEnabled="{Binding HasData}"
+                                                HorizontalAlignment="Right"
+                                                Padding="12,6"
+                                                Margin="0,10,0,0"/>
                                     </StackPanel>
                                 </Grid>
                             </Border>
@@ -123,7 +194,7 @@
             </ScrollViewer>
         </Border>
 
-        <TextBlock Grid.Row="3"
+        <TextBlock Grid.Row="4"
                    Text="{Binding Status}"
                    Style="{StaticResource MutedText}"
                    FontSize="12"

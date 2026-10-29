@@ -1,11 +1,15 @@
 using System;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
+using System.Diagnostics;
+using System.IO;
 using System.Linq;
 using System.Runtime.CompilerServices;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
+using Microsoft.Win32;
 using NexusOptimizer.Services;
 
 namespace NexusOptimizer.ViewModels;
@@ -102,7 +106,12 @@ public sealed class CleanupItem : INotifyPropertyChanged
 
 public sealed class CleanupViewModel : INotifyPropertyChanged
 {
+    private const int PreviewLimit = 200;
+
     private readonly CleanupService _service = new();
+    private readonly CleanupSettingsStore _settingsStore = new();
+
+    private string? _lastLogPath;
 
     private CancellationTokenSource? _cts;
     private bool _isBusy;
@@ -110,6 +119,14 @@ public sealed class CleanupViewModel : INotifyPropertyChanged
 
     public CleanupViewModel()
     {
+        foreach (string folder in _settingsStore.Load().ExcludedFolders)
+        {
+            if (!string.IsNullOrWhiteSpace(folder))
+                ExcludedFolders.Add(folder);
+        }
+
+        _service.ExcludedFolders = ExcludedFolders.ToList();
+
         foreach (CleanupDefinition definition in _service.Definitions)
         {
             var item = new CleanupItem(definition);
@@ -124,6 +141,10 @@ public sealed class CleanupViewModel : INotifyPropertyChanged
     }
 
     public ObservableCollection<CleanupItem> Items { get; } = [];
+
+    public ObservableCollection<string> ExcludedFolders { get; } = [];
+
+    public bool HasExcludedFolders => ExcludedFolders.Count > 0;
 
     public bool IsBusy
     {
@@ -252,6 +273,11 @@ public sealed class CleanupViewModel : INotifyPropertyChanged
         int skipped = 0;
         bool cancelled = false;
 
+        // Журнал: каждый удалённый файл записывается в отдельный текстовый файл.
+        StreamWriter? log = OpenCleanupLog();
+
+        Action<string, long> onDeleted = (path, bytes) => WriteLog(log, $"{ByteSize.Format(bytes)}\t{path}");
+
         try
         {
             foreach (CleanupItem item in selected)
@@ -260,7 +286,10 @@ public sealed class CleanupViewModel : INotifyPropertyChanged
 
                 Status = $"Очистка: {item.Title}…";
 
-                CleanupOutcome outcome = await _service.CleanAsync(item.Definition, token);
+                WriteLog(log, string.Empty);
+                WriteLog(log, $"== {item.Title} ==");
+
+                CleanupOutcome outcome = await _service.CleanAsync(item.Definition, token, onDeleted);
 
                 freed += outcome.FreedBytes;
                 deleted += outcome.DeletedFiles;
@@ -275,9 +304,15 @@ public sealed class CleanupViewModel : INotifyPropertyChanged
         {
             AppLog.Error("Очистка: ошибка удаления", ex);
             Status = "Очистка остановилась из-за ошибки. Подробности записаны в журнал.";
+            log?.Dispose();
             EndBusy();
             return;
         }
+
+        WriteLog(log, string.Empty);
+        WriteLog(log, $"Итого: освобождено {ByteSize.Format(freed)}, удалено файлов {deleted}, пропущено {skipped}"
+                      + (cancelled ? " (очистка прервана)" : string.Empty));
+        log?.Dispose();
 
         EndBusy();
 
@@ -289,6 +324,9 @@ public sealed class CleanupViewModel : INotifyPropertyChanged
 
         result += ".";
 
+        if (log is not null && _lastLogPath is not null)
+            result += $" Журнал: {Path.GetFileName(_lastLogPath)}.";
+
         // Пересчитываем размеры, чтобы список показывал актуальное состояние.
         await AnalyzeAsync();
         Status = result;
@@ -296,7 +334,143 @@ public sealed class CleanupViewModel : INotifyPropertyChanged
 
     public void Cancel() => _cts?.Cancel();
 
+    /// <summary>Готовит список самых крупных файлов категории, ничего не удаляя.</summary>
+    public async Task<CleanupPreview?> LoadPreviewAsync(CleanupItem item)
+    {
+        if (IsBusy)
+            return null;
+
+        CancellationToken token = BeginBusy();
+
+        try
+        {
+            Status = $"Готовим список файлов: {item.Title}…";
+
+            CleanupPreview preview = await _service.PreviewAsync(item.Definition, PreviewLimit, token);
+
+            Status = "Список готов. Ничего не удалено.";
+            return preview;
+        }
+        catch (OperationCanceledException)
+        {
+            Status = "Просмотр отменён.";
+            return null;
+        }
+        catch (Exception ex)
+        {
+            AppLog.Error("Очистка: не удалось подготовить список файлов", ex);
+            Status = "Не удалось подготовить список файлов. Подробности записаны в журнал.";
+            return null;
+        }
+        finally
+        {
+            EndBusy();
+        }
+    }
+
+    /// <returns>true, если исключение добавлено и список нужно пересчитать.</returns>
+    public bool AddExcludedFolder()
+    {
+        if (IsBusy)
+            return false;
+
+        var dialog = new OpenFolderDialog
+        {
+            Title = "Выберите папку, которую очистка не должна трогать"
+        };
+
+        if (dialog.ShowDialog() != true)
+            return false;
+
+        string folder = dialog.FolderName;
+
+        if (ExcludedFolders.Contains(folder, StringComparer.OrdinalIgnoreCase))
+        {
+            Status = "Эта папка уже в исключениях.";
+            return false;
+        }
+
+        ExcludedFolders.Add(folder);
+        SaveExclusions();
+
+        Status = $"Исключение добавлено: {folder}";
+        return true;
+    }
+
+    /// <returns>true, если исключение убрано и список нужно пересчитать.</returns>
+    public bool RemoveExcludedFolder(string folder)
+    {
+        if (IsBusy || !ExcludedFolders.Remove(folder))
+            return false;
+
+        SaveExclusions();
+
+        Status = $"Исключение убрано: {folder}";
+        return true;
+    }
+
+    public void OpenLogFolder()
+    {
+        try
+        {
+            Directory.CreateDirectory(AppPaths.CleanupLogDirectory);
+
+            Process.Start(new ProcessStartInfo
+            {
+                FileName = "explorer.exe",
+                Arguments = $"\"{AppPaths.CleanupLogDirectory}\"",
+                UseShellExecute = true
+            });
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn("Не удалось открыть папку журналов очистки", ex);
+            Status = "Не удалось открыть папку журналов.";
+        }
+    }
+
     // ───────────────────────── Внутреннее ─────────────────────────
+
+    private void SaveExclusions()
+    {
+        _service.ExcludedFolders = ExcludedFolders.ToList();
+        _settingsStore.Save(new CleanupSettings { ExcludedFolders = ExcludedFolders.ToList() });
+        OnPropertyChanged(nameof(HasExcludedFolders));
+    }
+
+    private StreamWriter? OpenCleanupLog()
+    {
+        try
+        {
+            Directory.CreateDirectory(AppPaths.CleanupLogDirectory);
+
+            _lastLogPath = Path.Combine(
+                AppPaths.CleanupLogDirectory,
+                $"cleanup-{DateTime.Now:yyyyMMdd-HHmmss}.txt");
+
+            var writer = new StreamWriter(_lastLogPath, append: false, Encoding.UTF8);
+            writer.WriteLine($"Очистка от {DateTime.Now:dd.MM.yyyy HH:mm:ss}");
+            return writer;
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn("Не удалось создать журнал очистки", ex);
+            _lastLogPath = null;
+            return null;
+        }
+    }
+
+    private static void WriteLog(StreamWriter? log, string line)
+    {
+        try
+        {
+            log?.WriteLine(line);
+        }
+        catch
+        {
+            // Журнал не должен мешать очистке.
+        }
+    }
 
     private CancellationToken BeginBusy()
     {

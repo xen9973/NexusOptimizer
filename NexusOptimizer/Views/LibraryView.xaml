@@ -15,6 +15,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -88,8 +89,26 @@
                  ItemsSource="{Binding PlatformFilters}"
                  SelectedItem="{Binding SelectedPlatform, Mode=TwoWay}"/>
 
-        <!-- Папки для поиска -->
+        <!-- Сортировка и избранное -->
         <StackPanel Grid.Row="3"
+                    Orientation="Horizontal"
+                    Margin="0,0,0,14">
+            <TextBlock Text="Сортировка"
+                       Style="{StaticResource MutedText}"
+                       FontSize="12"
+                       VerticalAlignment="Center"
+                       Margin="0,0,12,0"/>
+            <ListBox Style="{StaticResource ChipListBoxStyle}"
+                     ItemsSource="{Binding SortModes}"
+                     SelectedItem="{Binding SortMode, Mode=TwoWay}"/>
+            <CheckBox Content="Только избранное"
+                      IsChecked="{Binding ShowOnlyFavorites, Mode=TwoWay}"
+                      VerticalAlignment="Center"
+                      Margin="12,0,0,0"/>
+        </StackPanel>
+
+        <!-- Папки для поиска -->
+        <StackPanel Grid.Row="4"
                     Margin="0,0,0,6"
                     Visibility="{Binding HasExtraFolders, Converter={StaticResource BoolToVisibility}}">
             <TextBlock Text="Папки для поиска"
@@ -134,7 +153,7 @@
         </StackPanel>
 
         <!-- Список игр -->
-        <Border Grid.Row="4"
+        <Border Grid.Row="5"
                 Style="{StaticResource PanelCard}"
                 Padding="18,18,8,4">
             <Grid>
@@ -173,6 +192,7 @@
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="Auto"/>
                                                 <ColumnDefinition Width="*"/>
+                                                <ColumnDefinition Width="Auto"/>
                                             </Grid.ColumnDefinitions>
 
                                             <Border Width="48"
@@ -207,7 +227,31 @@
                                                            Style="{StaticResource MutedText}"
                                                            FontSize="12"
                                                            Margin="0,3,0,0"/>
+                                                <TextBlock Text="{Binding LastPlayedText}"
+                                                           Style="{StaticResource MutedText}"
+                                                           FontSize="11"
+                                                           Margin="0,2,0,0"/>
                                             </StackPanel>
+                                            <Button Grid.Column="2"
+                                                    Content="{Binding FavoriteGlyph}"
+                                                    Tag="{Binding}"
+                                                    Click="Favorite_Click"
+                                                    ToolTip="Добавить в избранное или убрать из избранного"
+                                                    Background="Transparent"
+                                                    FontSize="18"
+                                                    Padding="6,0"
+                                                    VerticalAlignment="Top">
+                                                <Button.Style>
+                                                    <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
+                                                        <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+                                                        <Style.Triggers>
+                                                            <DataTrigger Binding="{Binding IsFavorite}" Value="True">
+                                                                <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                            </DataTrigger>
+                                                        </Style.Triggers>
+                                                    </Style>
+                                                </Button.Style>
+                                            </Button>
                                         </Grid>
 
                                         <Border HorizontalAlignment="Left"
@@ -283,7 +327,7 @@
         </Border>
 
         <!-- Строка состояния -->
-        <TextBlock Grid.Row="5"
+        <TextBlock Grid.Row="6"
                    Text="{Binding Status}"
                    Style="{StaticResource MutedText}"
                    FontSize="12"
