@@ -619,7 +619,7 @@ public partial class GameDetailsView : UserControl
         var errors = new List<string>();
 
         if (_executables.Count > 0 || _settings.TweakBackups.Count > 0)
-            errors.AddRange(_tweaks.ApplyProfile(_executables, _settings));
+            errors.AddRange(_tweaks.ApplyProfile(_executables, _settings, () => _settingsStore.Save(_game!, _settings)));
 
         try
         {

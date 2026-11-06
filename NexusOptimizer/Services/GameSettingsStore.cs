@@ -44,6 +44,17 @@ public sealed class GameSettingsStore
 {
     private static readonly JsonSerializerOptions Options = new() { WriteIndented = true };
 
+    private readonly string? _directory;
+
+    /// <param name="directory">Папка для файлов; по умолчанию — AppPaths.GameSettingsDirectory (нужна тестам).</param>
+    public GameSettingsStore(string? directory = null) => _directory = directory;
+
+    private string DirectoryPath => _directory ?? AppPaths.GameSettingsDirectory;
+
+    /// <summary>
+    /// Читает настройки игры. Если основной файл повреждён, берёт предыдущую копию (.bak):
+    /// в файле лежат резервные значения реестра, терять их нельзя.
+    /// </summary>
     public GameSettings? Load(GameInfo game)
     {
         string path = GetPath(game);
@@ -51,33 +62,71 @@ public sealed class GameSettingsStore
         if (!File.Exists(path))
             return null;
 
-        GameSettings? settings = JsonSerializer.Deserialize<GameSettings>(File.ReadAllText(path));
+        GameSettings? settings = TryRead(path);
 
-        if (settings is not null)
-            settings.TweakBackups ??= new Dictionary<string, ExeTweakBackup>();
+        if (settings is null)
+        {
+            AppLog.Warn($"Файл настроек игры повреждён, пробуем предыдущую копию: {game.Name}", null);
+            settings = TryRead(path + ".bak");
+        }
 
         return settings;
     }
 
+    /// <summary>Пишет во временный файл и подменяет им основной; прежняя версия остаётся в .bak.</summary>
     public void Save(GameInfo game, GameSettings settings)
     {
-        Directory.CreateDirectory(AppPaths.GameSettingsDirectory);
-        File.WriteAllText(GetPath(game), JsonSerializer.Serialize(settings, Options));
+        Directory.CreateDirectory(DirectoryPath);
+
+        string path = GetPath(game);
+        string temp = path + ".tmp";
+
+        File.WriteAllText(temp, JsonSerializer.Serialize(settings, Options));
+
+        if (File.Exists(path))
+            File.Replace(temp, path, path + ".bak");
+        else
+            File.Move(temp, path);
     }
 
     public void Delete(GameInfo game)
     {
         string path = GetPath(game);
 
-        if (File.Exists(path))
-            File.Delete(path);
+        // Копию .bak тоже убираем: иначе после отката она «воскресила» бы устаревшие резервные значения.
+        foreach (string file in new[] { path, path + ".bak", path + ".tmp" })
+        {
+            if (File.Exists(file))
+                File.Delete(file);
+        }
     }
 
-    private static string GetPath(GameInfo game)
+    private static GameSettings? TryRead(string path)
+    {
+        try
+        {
+            if (!File.Exists(path))
+                return null;
+
+            GameSettings? settings = JsonSerializer.Deserialize<GameSettings>(File.ReadAllText(path));
+
+            if (settings is not null)
+                settings.TweakBackups ??= new Dictionary<string, ExeTweakBackup>();
+
+            return settings;
+        }
+        catch (Exception ex) when (ex is JsonException or IOException or UnauthorizedAccessException)
+        {
+            AppLog.Warn($"Не удалось прочитать {Path.GetFileName(path)}", ex);
+            return null;
+        }
+    }
+
+    private string GetPath(GameInfo game)
     {
         string key = Convert.ToHexString(
             SHA256.HashData(Encoding.UTF8.GetBytes(game.InstallPath.Trim().ToLowerInvariant())));
 
-        return Path.Combine(AppPaths.GameSettingsDirectory, key + ".json");
+        return Path.Combine(DirectoryPath, key + ".json");
     }
 }

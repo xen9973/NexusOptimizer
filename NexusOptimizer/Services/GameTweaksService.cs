@@ -48,7 +48,7 @@ public sealed class GameTweaksService
     /// Приводит реестр в соответствие с настройками. Исходные значения запоминаются в settings.TweakBackups.
     /// </summary>
     /// <returns>Список ошибок; пустой, если всё прошло успешно.</returns>
-    public List<string> ApplyProfile(IReadOnlyList<string> executables, GameSettings settings)
+    public List<string> ApplyProfile(IReadOnlyList<string> executables, GameSettings settings, Action? persist = null)
     {
         var errors = new List<string>();
         var current = new HashSet<string>(executables.Select(Key), StringComparer.Ordinal);
@@ -68,6 +68,7 @@ public sealed class GameTweaksService
                 {
                     backup = Capture(exe);
                     settings.TweakBackups[Key(exe)] = backup;
+                    TryPersist(persist);
                 }
 
                 if (settings.HighPerformanceGpu)
@@ -92,6 +93,22 @@ public sealed class GameTweaksService
             settings.TweakBackups.Clear();
 
         return errors;
+    }
+
+    /// <summary>Сохраняет резервную копию до записи в реестр: сбой посреди применения не должен её потерять.</summary>
+    private static void TryPersist(Action? persist)
+    {
+        if (persist is null)
+            return;
+
+        try
+        {
+            persist();
+        }
+        catch (Exception ex)
+        {
+            AppLog.Warn("Не удалось заранее сохранить резервную копию настроек", ex);
+        }
     }
 
     /// <summary>Возвращает все изменённые значения реестра к исходным и снимает флаги в settings.</summary>
@@ -135,7 +152,7 @@ public sealed class GameTweaksService
             DeleteValue(GpuKeyPath, backup.Executable);
     }
 
-    private static List<KeyValuePair<string, string>> ParseGpuValue(string? raw)
+    internal static List<KeyValuePair<string, string>> ParseGpuValue(string? raw)
     {
         var result = new List<KeyValuePair<string, string>>();
 
@@ -151,7 +168,7 @@ public sealed class GameTweaksService
         return result;
     }
 
-    private static string? GetGpuPreference(string? raw)
+    internal static string? GetGpuPreference(string? raw)
     {
         return ParseGpuValue(raw)
             .Where(pair => string.Equals(pair.Key, GpuPreferenceName, StringComparison.OrdinalIgnoreCase))
@@ -183,7 +200,7 @@ public sealed class GameTweaksService
     private static void RestoreFullscreen(ExeTweakBackup backup) =>
         SetFullscreenToken(backup.Executable, backup.HadFullscreenToken);
 
-    private static List<string> ParseLayerTokens(string? raw)
+    internal static List<string> ParseLayerTokens(string? raw)
     {
         return (raw ?? string.Empty)
             .Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries)

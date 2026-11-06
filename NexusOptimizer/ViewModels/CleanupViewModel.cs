@@ -110,6 +110,8 @@ public sealed class CleanupViewModel : INotifyPropertyChanged
 
     private readonly CleanupService _service = new();
     private readonly CleanupSettingsStore _settingsStore = new();
+    private readonly CleanupHistoryStore _historyStore = new();
+    private string _historySummary = string.Empty;
 
     private string? _lastLogPath;
 
@@ -117,8 +119,42 @@ public sealed class CleanupViewModel : INotifyPropertyChanged
     private bool _isBusy;
     private string _status = "Нажмите «Проанализировать», чтобы увидеть, сколько места можно освободить.";
 
+    /// <summary>Итог очисток за всё время и последняя очистка.</summary>
+    public string HistorySummary
+    {
+        get => _historySummary;
+        private set
+        {
+            if (_historySummary == value)
+                return;
+
+            _historySummary = value;
+            OnPropertyChanged();
+        }
+    }
+
+    private void RecordHistory(IEnumerable<string> categories, long freed, int deleted, int skipped, bool cancelled)
+    {
+        if (freed <= 0 && deleted == 0)
+            return;
+
+        _historyStore.Append(new CleanupRecord
+        {
+            FinishedUtc = DateTime.UtcNow,
+            FreedBytes = freed,
+            DeletedFiles = deleted,
+            SkippedFiles = skipped,
+            Cancelled = cancelled,
+            Categories = categories.ToList()
+        });
+
+        HistorySummary = CleanupHistoryStore.Summarize(_historyStore.Load());
+    }
+
     public CleanupViewModel()
     {
+        HistorySummary = CleanupHistoryStore.Summarize(_historyStore.Load());
+
         foreach (string folder in _settingsStore.Load().ExcludedFolders)
         {
             if (!string.IsNullOrWhiteSpace(folder))
@@ -313,6 +349,8 @@ public sealed class CleanupViewModel : INotifyPropertyChanged
         WriteLog(log, $"Итого: освобождено {ByteSize.Format(freed)}, удалено файлов {deleted}, пропущено {skipped}"
                       + (cancelled ? " (очистка прервана)" : string.Empty));
         log?.Dispose();
+
+        RecordHistory(selected.Select(item => item.Title), freed, deleted, skipped, cancelled);
 
         EndBusy();
 

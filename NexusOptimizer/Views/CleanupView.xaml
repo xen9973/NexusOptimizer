@@ -194,11 +194,16 @@
             </ScrollViewer>
         </Border>
 
-        <TextBlock Grid.Row="4"
-                   Text="{Binding Status}"
-                   Style="{StaticResource MutedText}"
-                   FontSize="12"
-                   TextWrapping="Wrap"
-                   Margin="2,12,0,0"/>
+        <StackPanel Grid.Row="4" Margin="2,12,0,0">
+            <TextBlock Text="{Binding Status}"
+                       Style="{StaticResource MutedText}"
+                       FontSize="12"
+                       TextWrapping="Wrap"/>
+            <TextBlock Text="{Binding HistorySummary}"
+                       Style="{StaticResource MutedText}"
+                       FontSize="12"
+                       TextWrapping="Wrap"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
     </Grid>
 </UserControl>

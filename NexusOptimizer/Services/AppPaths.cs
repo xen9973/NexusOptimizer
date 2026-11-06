@@ -24,4 +24,6 @@ public static class AppPaths
     public static string CleanupSettingsFile => Path.Combine(Root, "cleanup-settings.json");
 
     public static string CleanupLogDirectory => Path.Combine(Root, "logs", "cleanup");
+
+    public static string CleanupHistoryFile => Path.Combine(Root, "cleanup-history.json");
 }

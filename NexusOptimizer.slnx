@@ -1,3 +1,4 @@
 <Solution>
   <Project Path="NexusOptimizer/NexusOptimizer.csproj" />
+  <Project Path="NexusOptimizer.Tests/NexusOptimizer.Tests.csproj" />
 </Solution>
