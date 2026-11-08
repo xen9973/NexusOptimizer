@@ -19,7 +19,7 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; scroll-padding-top: 88px; }
+html { scroll-behavior: smooth; scroll-padding-top: 88px; overflow-x: clip; }
 body { margin: 0; min-width: 320px; background: var(--bg); color: var(--text); overflow-x: hidden; }
 button, input { font: inherit; }
 button, a { -webkit-tap-highlight-color: transparent; }
@@ -95,7 +95,7 @@ h1, h2, p { margin-top: 0; }
 .section-heading > p span { color: var(--dim); }
 .demo-window { display: grid; grid-template-columns: 232px minmax(0, 1fr); grid-template-rows: 42px minmax(0, 1fr); min-height: 620px; overflow: hidden; border: 1px solid var(--line); border-radius: 10px; background: var(--bg); box-shadow: 0 20px 60px rgba(0, 0, 0, .2); }
 .demo-sidebar { grid-row: 2; display: flex; flex-direction: column; padding: 21px 14px 15px; border-right: 1px solid var(--line); background: var(--surface); }
-.demo-brand { padding: 0 5px 27px; font-size: 15px; font-weight: 600; }
+.demo-brand { padding: 0 5px 27px; color: var(--text); font-size: 15px; font-weight: 600; }
 .demo-brand .brand-mark { flex: 0 0 40px; width: 40px; height: 40px; border-radius: 12px; }
 .demo-brand small { display: block; margin-top: 3px; color: var(--muted); font-size: 11px; font-weight: 400; }
 .demo-nav { display: grid; gap: 5px; }
@@ -110,7 +110,7 @@ h1, h2, p { margin-top: 0; }
 .safe-label { margin-top: 6px; padding: 9px 5px; border-radius: 10px; background: #20342f; color: #54d6a0; text-align: center; font-size: 12px; font-weight: 600; }
 .demo-content { grid-row: 2; min-width: 0; display: flex; flex-direction: column; }
 .demo-topbar { grid-column: 1 / -1; display: flex; align-items: center; justify-content: space-between; padding: 0 0 0 14px; border-bottom: 1px solid var(--line); background: var(--surface); }
-.window-title { display: inline-flex; align-items: center; gap: 9px; font-size: 12px; font-weight: 600; }
+.window-title { display: inline-flex; align-items: center; gap: 9px; color: var(--text); font-size: 12px; font-weight: 600; }
 .window-logo { width: 24px; height: 24px; display: grid; place-items: center; border-radius: 7px; background: var(--purple); color: white; font-size: 14px; font-weight: 700; }
 .window-controls { align-self: stretch; display: flex; }
 .window-controls span { width: 46px; display: grid; place-items: center; color: var(--text); font-size: 14px; }
@@ -216,10 +216,28 @@ h1, h2, p { margin-top: 0; }
   --purple-soft: #e5eeff;
   --green: #16865f;
   color-scheme: light;
-  background: #f3f5f9;
+  background-color: #f3f5f9;
+  color: #172033;
 }
 .light-demo .demo-sidebar, .light-demo .demo-topbar { background: #fff; }
 .light-demo .demo-screen { background: #f3f5f9; }
+.light-demo .demo-brand,
+.light-demo .window-title,
+.light-demo .screen-heading h3,
+.light-demo .game-name,
+.light-demo .row-copy b,
+.light-demo .detail-panel h4,
+.light-demo .spec-panel h4,
+.light-demo .spec-item b { color: #172033; }
+.light-demo .demo-brand small,
+.light-demo .demo-nav-item,
+.light-demo .theme-button,
+.light-demo .screen-subtitle,
+.light-demo .game-platform,
+.light-demo .row-copy small,
+.light-demo .row-value,
+.light-demo .spec-item small { color: #707b8e; }
+.light-demo .window-controls span { color: #172033; }
 .light-demo .demo-nav-item.is-active { color: #285eb8; background: #e5eeff; }
 .light-demo .game-card, .light-demo .cleanup-row, .light-demo .tweak-row, .light-demo .recommendation-row, .light-demo .detail-panel, .light-demo .spec-panel { background: #f7f8fb; }
 .light-demo .demo-search { background: #fff; }
@@ -263,11 +281,11 @@ h1, h2, p { margin-top: 0; }
   .demo-sidebar { grid-row: 2; padding: 11px 10px 9px; border-right: 0; border-bottom: 1px solid var(--line); }
   .demo-brand { padding: 0 3px 10px; }
   .demo-nav { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .demo-nav-item { min-height: 35px; padding: 7px 6px; gap: 6px; font-size: 8px; }
-  .demo-nav-item span { width: 12px; font-size: 12px; }
+  .demo-nav-item { min-height: 40px; padding: 8px; gap: 7px; font-size: 10px; }
+  .demo-nav-item span { width: 14px; font-size: 13px; }
   .sidebar-bottom { display: flex; align-items: center; gap: 7px; margin-top: 7px; }
-  .theme-button { width: auto; padding: 7px 5px; font-size: 8px; }
-  .safe-label { margin: 0 0 0 auto; padding: 7px; font-size: 8px; }
+  .theme-button { width: auto; padding: 7px 5px; font-size: 10px; }
+  .safe-label { margin: 0 0 0 auto; padding: 7px; font-size: 9px; }
   .demo-topbar { padding-left: 9px; }
   .window-title { gap: 6px; font-size: 10px; }
   .window-logo { width: 21px; height: 21px; font-size: 12px; }
@@ -275,13 +293,14 @@ h1, h2, p { margin-top: 0; }
   .demo-content { grid-row: 3; }
   .demo-screen { min-height: 390px; padding: 17px 12px; }
   .screen-heading { align-items: start; }
-  .screen-heading h3 { font-size: 15px; }
-  .screen-action { padding-inline: 9px; font-size: 8px; }
+  .screen-heading h3 { font-size: 20px; }
+  .screen-subtitle { font-size: 11px; }
+  .screen-action { padding-inline: 9px; font-size: 10px; }
   .game-grid { gap: 7px; }
   .game-card { grid-template-columns: 40px minmax(0, 1fr) 17px; gap: 7px; padding: 8px 6px; }
   .game-cover { width: 40px; height: 48px; font-size: 12px; }
-  .game-name { font-size: 9px; }
-  .game-platform { font-size: 7px; }
+  .game-name { font-size: 10px; }
+  .game-platform { font-size: 8px; }
   .favorite-button { font-size: 12px; }
   .scan-layout { grid-template-columns: 1fr; }
   .spec-panel { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0 10px; }
