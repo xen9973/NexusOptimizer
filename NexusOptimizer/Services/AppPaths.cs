@@ -23,6 +23,13 @@ public static class AppPaths
 
     public static string CleanupSettingsFile => Path.Combine(Root, "cleanup-settings.json");
 
+    public static string AppPreferencesFile => Path.Combine(Root, "app-preferences.json");
+
+    public static string PcTweaksFile => Path.Combine(Root, "pc-tweaks.json");
+
+    public static string GetPcTweaksResultFile(Guid requestId) =>
+        Path.Combine(Root, "pc-tweaks-result-" + requestId.ToString("N") + ".json");
+
     public static string CleanupLogDirectory => Path.Combine(Root, "logs", "cleanup");
 
     public static string CleanupHistoryFile => Path.Combine(Root, "cleanup-history.json");

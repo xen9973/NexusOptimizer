@@ -23,9 +23,9 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Очистка ПК" Style="{StaticResource PageTitleText}"/>
+                <TextBlock Text="Очистка ПК" Style="{DynamicResource PageTitleText}"/>
                 <TextBlock Text="{Binding Summary}"
-                           Style="{StaticResource MutedText}"
+                           Style="{DynamicResource MutedText}"
                            Margin="0,4,0,0"/>
             </StackPanel>
 
@@ -53,14 +53,14 @@
                 <Button Content="Очистить выбранное"
                         Click="Clean_Click"
                         IsEnabled="{Binding CanClean}"
-                        Style="{StaticResource AccentButton}"
+                        Style="{DynamicResource AccentButton}"
                         Height="40"
                         MinWidth="170"/>
             </StackPanel>
         </Grid>
 
         <TextBlock Grid.Row="1"
-                   Style="{StaticResource MutedText}"
+                   Style="{DynamicResource MutedText}"
                    FontSize="12"
                    TextWrapping="Wrap"
                    LineHeight="19"
@@ -71,7 +71,7 @@
         <StackPanel Grid.Row="2" Margin="0,0,0,12">
             <WrapPanel>
                 <TextBlock Text="Исключения"
-                           Style="{StaticResource MutedText}"
+                           Style="{DynamicResource MutedText}"
                            FontSize="12"
                            VerticalAlignment="Center"
                            Margin="0,0,12,8"/>
@@ -80,7 +80,7 @@
                         Padding="14,7"
                         Margin="0,0,12,8"/>
                 <TextBlock Text="Папки из этого списка очистка не трогает."
-                           Style="{StaticResource MutedText}"
+                           Style="{DynamicResource MutedText}"
                            FontSize="12"
                            VerticalAlignment="Center"
                            Margin="0,0,0,8"
@@ -95,8 +95,8 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="{StaticResource CardBrush}"
-                                BorderBrush="{StaticResource LineBrush}"
+                        <Border Background="{DynamicResource CardBrush}"
+                                BorderBrush="{DynamicResource LineBrush}"
                                 BorderThickness="1"
                                 CornerRadius="8"
                                 Padding="10,3,3,3"
@@ -106,7 +106,7 @@
                                            ToolTip="{Binding}"
                                            MaxWidth="380"
                                            FontSize="12"
-                                           Foreground="{StaticResource BodyTextBrush}"
+                                           Foreground="{DynamicResource BodyTextBrush}"
                                            TextTrimming="CharacterEllipsis"
                                            VerticalAlignment="Center"/>
                                 <Button Content="✕"
@@ -114,7 +114,7 @@
                                         Click="RemoveExclusion_Click"
                                         ToolTip="Убрать из исключений"
                                         Background="Transparent"
-                                        Foreground="{StaticResource MutedBrush}"
+                                        Foreground="{DynamicResource MutedBrush}"
                                         Padding="8,3"
                                         Margin="6,0,0,0"/>
                             </StackPanel>
@@ -126,15 +126,15 @@
 
         <!-- Категории -->
         <Border Grid.Row="3"
-                Style="{StaticResource PanelCard}"
+                Style="{DynamicResource PanelCard}"
                 Padding="18,18,8,8">
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
                 <ItemsControl ItemsSource="{Binding Items}" Margin="0,0,10,0">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
-                            <Border Background="{StaticResource CardBrush}"
-                                    BorderBrush="{StaticResource LineBrush}"
+                            <Border Background="{DynamicResource CardBrush}"
+                                    BorderBrush="{DynamicResource LineBrush}"
                                     BorderThickness="1"
                                     CornerRadius="12"
                                     Padding="16"
@@ -156,9 +156,9 @@
                                         <TextBlock Text="{Binding Title}"
                                                    FontSize="15"
                                                    FontWeight="SemiBold"
-                                                   Foreground="{StaticResource TextBrush}"/>
+                                                   Foreground="{DynamicResource TextBrush}"/>
                                         <TextBlock Text="{Binding Description}"
-                                                   Style="{StaticResource MutedText}"
+                                                   Style="{DynamicResource MutedText}"
                                                    FontSize="12"
                                                    LineHeight="18"
                                                    TextWrapping="Wrap"
@@ -171,10 +171,10 @@
                                         <TextBlock Text="{Binding SizeText}"
                                                    FontSize="14"
                                                    FontWeight="SemiBold"
-                                                   Foreground="{StaticResource AccentTextBrush}"
+                                                   Foreground="{DynamicResource AccentTextBrush}"
                                                    TextAlignment="Right"/>
                                         <TextBlock Text="{Binding FilesText}"
-                                                   Style="{StaticResource MutedText}"
+                                                   Style="{DynamicResource MutedText}"
                                                    FontSize="11"
                                                    TextAlignment="Right"
                                                    Margin="0,3,0,0"/>
@@ -196,11 +196,11 @@
 
         <StackPanel Grid.Row="4" Margin="2,12,0,0">
             <TextBlock Text="{Binding Status}"
-                       Style="{StaticResource MutedText}"
+                       Style="{DynamicResource MutedText}"
                        FontSize="12"
                        TextWrapping="Wrap"/>
             <TextBlock Text="{Binding HistorySummary}"
-                       Style="{StaticResource MutedText}"
+                       Style="{DynamicResource MutedText}"
                        FontSize="12"
                        TextWrapping="Wrap"
                        Margin="0,4,0,0"/>

@@ -7,9 +7,9 @@
         MinWidth="600"
         MinHeight="400"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource BgBrush}"
-        Foreground="{StaticResource TextBrush}"
-        FontFamily="{StaticResource UiFont}">
+        Background="{DynamicResource BgBrush}"
+        Foreground="{DynamicResource TextBrush}"
+        FontFamily="{DynamicResource UiFont}">
 
     <Grid Margin="24">
         <Grid.RowDefinitions>
@@ -19,17 +19,17 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock x:Name="TitleText" Style="{StaticResource SectionTitleText}"/>
+        <TextBlock x:Name="TitleText" Style="{DynamicResource SectionTitleText}"/>
 
         <TextBlock x:Name="SummaryText"
                    Grid.Row="1"
-                   Style="{StaticResource MutedText}"
+                   Style="{DynamicResource MutedText}"
                    FontSize="12"
                    TextWrapping="Wrap"
                    Margin="0,6,0,14"/>
 
         <Border Grid.Row="2"
-                Style="{StaticResource PanelCard}"
+                Style="{DynamicResource PanelCard}"
                 Padding="14,12,6,6">
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
@@ -45,13 +45,13 @@
                                 <TextBlock Text="{Binding Path}"
                                            ToolTip="{Binding Path}"
                                            FontSize="12"
-                                           Foreground="{StaticResource BodyTextBrush}"
+                                           Foreground="{DynamicResource BodyTextBrush}"
                                            TextTrimming="CharacterEllipsis"/>
                                 <TextBlock Grid.Column="1"
                                            Text="{Binding SizeText}"
                                            FontSize="12"
                                            FontWeight="SemiBold"
-                                           Foreground="{StaticResource AccentTextBrush}"
+                                           Foreground="{DynamicResource AccentTextBrush}"
                                            Margin="16,0,0,0"/>
                             </Grid>
                         </DataTemplate>

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#090d18">
+  <meta name="description" content="Nexus Optimizer — библиотека игр, обратимые настройки Windows и аккуратная очистка ПК. Изучите возможности и попробуйте интерактивное демо.">
+  <title>Nexus Optimizer — игры и обслуживание ПК</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='18' fill='%237c6cff'/%3E%3Cpath d='M18 46V18h6l16 18V18h6v28h-6L24 28v18z' fill='white'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <script src="script.js" defer></script>
+</head>
+<body>
+  <div class="page-glow page-glow-one" aria-hidden="true"></div>
+  <div class="page-glow page-glow-two" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <a class="brand" href="#home" aria-label="Nexus Optimizer — на главную">
+      <span class="brand-mark">N</span>
+      <span class="brand-name">NEXUS<span>OPTIMIZER</span></span>
+    </a>
+    <button class="mobile-menu-button" type="button" aria-expanded="false" aria-controls="site-nav">Меню</button>
+    <nav class="site-nav" id="site-nav" aria-label="Основная навигация">
+      <a href="#features">Возможности</a>
+      <a href="#demo">Демо интерфейса</a>
+      <a href="#safety">Безопасность</a>
+    </nav>
+    <a class="header-link" href="https://github.com/xen9973/NexusOptimizer" target="_blank" rel="noreferrer">GitHub <span aria-hidden="true">↗</span></a>
+  </header>
+
+  <main>
+    <section class="hero section-wrap" id="home">
+      <div class="hero-copy">
+        <div class="eyebrow"><span class="status-dot"></span> ИНСТРУМЕНТЫ ДЛЯ WINDOWS</div>
+        <h1>Игры и настройки ПК.<br><span>Всё под контролем.</span></h1>
+        <p class="hero-lead">Nexus Optimizer собирает игровую библиотеку, помогает настраивать Windows и очищать временные файлы — без скрытых действий и обещаний волшебного прироста FPS.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#demo">Попробовать демо <span aria-hidden="true">↓</span></a>
+          <a class="button button-secondary" href="https://github.com/xen9973/NexusOptimizer/releases" target="_blank" rel="noreferrer">Открыть релизы <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="hero-note"><span class="note-icon">i</span> Демо работает прямо в браузере и ничего не меняет на компьютере.</div>
+      </div>
+
+      <div class="hero-art" aria-label="Иллюстрация интерфейса приложения">
+        <div class="orbit orbit-one"></div>
+        <div class="orbit orbit-two"></div>
+        <div class="hero-orb"><span>N</span><i></i></div>
+        <div class="float-card float-card-top"><span class="float-icon">⌘</span><span>Библиотека игр</span><b>●</b></div>
+        <div class="float-card float-card-bottom"><span class="float-icon float-icon-green">✓</span><span>Настройки под контролем</span></div>
+        <div class="art-caption">NEXUS / WINDOWS TOOLKIT</div>
+      </div>
+    </section>
+
+    <section class="feature-strip section-wrap" id="features" aria-label="Возможности программы">
+      <article class="feature-card">
+        <span class="feature-number">01 / LIBRARY</span>
+        <div class="feature-icon purple">▦</div>
+        <h2>Игровая библиотека</h2>
+        <p>Находит игры Steam и Epic Games, а также игры из выбранных папок. Ищите, сортируйте и отмечайте избранное.</p>
+      </article>
+      <article class="feature-card">
+        <span class="feature-number">02 / CLEANUP</span>
+        <div class="feature-icon cyan">⌁</div>
+        <h2>Понятная очистка</h2>
+        <p>Анализирует временные файлы и кэши. Перед удалением показывает результат, а занятые и свежие файлы пропускает.</p>
+      </article>
+      <article class="feature-card">
+        <span class="feature-number">03 / CONTROL</span>
+        <div class="feature-icon green">⛭</div>
+        <h2>Настройки Windows</h2>
+        <p>Управляйте настройками компьютера и отдельными игровыми профилями. Исходные значения можно восстановить.</p>
+      </article>
+      <article class="feature-card">
+        <span class="feature-number">04 / INSIGHT</span>
+        <div class="feature-icon amber">⌕</div>
+        <h2>Умная настройка</h2>
+        <p>Сканирует характеристики ПК и предлагает подходящие настройки. Рекомендации можно проверить до применения.</p>
+      </article>
+    </section>
+
+    <section class="demo-section section-wrap" id="demo">
+      <div class="section-heading">
+        <div>
+          <div class="eyebrow">ИНТЕРАКТИВНЫЙ ОБЗОР</div>
+          <h2>Знакомство с меню</h2>
+        </div>
+        <p>Переключайте разделы и нажимайте кнопки.<br><span>Это демонстрация — действия не затрагивают Windows.</span></p>
+      </div>
+
+      <div class="demo-window" id="demo-window">
+        <div class="demo-topbar">
+          <span class="window-title"><span class="window-logo">N</span> Nexus Optimizer</span>
+          <span class="window-controls" aria-hidden="true"><span>—</span><span>□</span><span>×</span></span>
+        </div>
+        <aside class="demo-sidebar">
+          <a class="demo-brand" href="#demo"><span class="brand-mark">N</span><span>Nexus Optimizer<small>Игры и обслуживание ПК</small></span></a>
+          <div class="demo-nav" role="tablist" aria-label="Разделы демо">
+            <button class="demo-nav-item is-active" type="button" role="tab" aria-selected="true" data-page="library"><span>▦</span> Библиотека</button>
+            <button class="demo-nav-item" type="button" role="tab" aria-selected="false" data-page="cleanup"><span>⌁</span> Очистка ПК</button>
+            <button class="demo-nav-item" type="button" role="tab" aria-selected="false" data-page="tweaks"><span>⛭</span> Настройка компьютера</button>
+            <button class="demo-nav-item" type="button" role="tab" aria-selected="false" data-page="scan"><span>⌕</span> Умная настройка</button>
+          </div>
+          <div class="sidebar-bottom">
+            <button class="theme-button" type="button" id="theme-toggle"><span>◐</span> Сменить тему</button>
+            <div class="safe-label"><span>✓</span> Безопасный режим</div>
+          </div>
+        </aside>
+        <div class="demo-content">
+          <div class="demo-screen" id="demo-screen" role="tabpanel" aria-live="polite"></div>
+        </div>
+      </div>
+      <p class="demo-footnote"><span>✦</span> В настоящем приложении настройки применяются только после вашего подтверждения.</p>
+    </section>
+
+    <section class="safety-section section-wrap" id="safety">
+      <div class="safety-visual" aria-hidden="true">
+        <div class="shield"><span>✓</span></div>
+        <div class="safety-ring ring-a"></div>
+        <div class="safety-ring ring-b"></div>
+        <span class="safety-spark spark-a">✦</span>
+        <span class="safety-spark spark-b">✧</span>
+      </div>
+      <div class="safety-copy">
+        <div class="eyebrow">СНАЧАЛА ПРОВЕРЬТЕ</div>
+        <h2>Понятные действия.<br><span>Никаких сюрпризов.</span></h2>
+        <ul class="safety-list">
+          <li><span>✓</span><div><b>Вы решаете, что менять</b><small>Сканирование и рекомендации не применяют настройки сами по себе.</small></div></li>
+          <li><span>✓</span><div><b>Можно вернуть исходное</b><small>Для поддерживаемых изменений приложение сохраняет исходные значения.</small></div></li>
+          <li><span>✓</span><div><b>Без обещаний лишнего FPS</b><small>Результат зависит от конфигурации Windows, компьютера и игры.</small></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="closing section-wrap">
+      <div>
+        <div class="eyebrow">NEXUS OPTIMIZER</div>
+        <h2>Посмотрите проект поближе.</h2>
+        <p>Исходный код и доступные сборки — на GitHub.</p>
+      </div>
+      <a class="button button-primary" href="https://github.com/xen9973/NexusOptimizer" target="_blank" rel="noreferrer">Перейти на GitHub <span aria-hidden="true">↗</span></a>
+    </section>
+  </main>
+
+  <footer class="site-footer section-wrap">
+    <a class="brand footer-brand" href="#home"><span class="brand-mark">N</span><span class="brand-name">NEXUS<span>OPTIMIZER</span></span></a>
+    <span>Инструменты для Windows. Выбор всегда за вами.</span>
+    <a href="https://github.com/xen9973/NexusOptimizer" target="_blank" rel="noreferrer">Открытый проект ↗</a>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

@@ -20,6 +20,7 @@ public partial class GameDetailsView : UserControl
 {
     private readonly GameDetailsService _detailsService = new();
     private readonly GameSettingsStore _settingsStore = new();
+    private readonly AppPreferencesStore _preferencesStore = new();
     private readonly GameTweaksService _tweaks = new();
     private readonly ImageCacheService _imageCache = new();
     private readonly ObservableCollection<OptimizationActionItem> _actionItems = [];
@@ -345,6 +346,7 @@ public partial class GameDetailsView : UserControl
         _executables = ExecutableLocator.FindAll(game);
         _settings = new GameSettings();
         SettingsStatusText.Text = "Профиль ещё не применялся";
+        bool hasSavedSettings = false;
 
         try
         {
@@ -353,6 +355,7 @@ public partial class GameDetailsView : UserControl
             if (saved is not null)
             {
                 _settings = saved;
+                hasSavedSettings = true;
                 SettingsStatusText.Text = "Загружен сохранённый профиль";
             }
         }
@@ -382,6 +385,22 @@ public partial class GameDetailsView : UserControl
         {
             _settings.HighPerformanceGpu = false;
             _settings.DisableFullscreenOptimizations = false;
+        }
+
+        if (!hasSavedSettings)
+        {
+            string defaultProfile = _preferencesStore.Load().DefaultGameProfile;
+            OptimizationProfileDefinition profile = OptimizationCatalog.GetProfile(defaultProfile);
+
+            foreach (OptimizationActionDefinition action in OptimizationCatalog.Actions)
+            {
+                bool available = !action.NeedsExecutable || hasExecutables;
+                action.Set(_settings, available && profile.ActionIds?.Contains(action.Id) == true);
+            }
+
+            SettingsStatusText.Text = hasExecutables
+                ? $"Профиль по умолчанию: {defaultProfile}. Он будет применён при запуске игры."
+                : $"Профиль по умолчанию: {defaultProfile}. Действия для exe-файлов недоступны.";
         }
 
         _updatingProfile = true;

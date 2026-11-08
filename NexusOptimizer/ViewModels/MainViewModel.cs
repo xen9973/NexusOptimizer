@@ -23,6 +23,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private readonly GameScanner _scanner = new();
     private readonly LibraryStore _store = new();
+    private readonly AppPreferencesStore _preferencesStore = new();
 
     private CancellationTokenSource? _scanCts;
     private string _status = "Готово к сканированию";
@@ -33,6 +34,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private bool _isScanning;
     private bool _suspendCounts;
     private DateTime? _lastScanUtc;
+    private string _defaultGameProfile;
 
     public ObservableCollection<GameInfo> Games { get; } = [];
 
@@ -43,10 +45,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public ObservableCollection<string> SortModes { get; } = [SortByName, SortByRecent];
 
+    public ObservableCollection<string> DefaultGameProfiles { get; } =
+        [OptimizationCatalog.StandardProfile, OptimizationCatalog.BalancedProfile, OptimizationCatalog.PerformanceProfile];
+
     public ICollectionView FilteredGames { get; }
 
     public MainViewModel()
     {
+        _defaultGameProfile = _preferencesStore.Load().DefaultGameProfile;
+
         FilteredGames = CollectionViewSource.GetDefaultView(Games);
         FilteredGames.Filter = FilterGame;
         ApplySort();
@@ -63,6 +70,35 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         get => _status;
         private set => SetField(ref _status, value);
+    }
+
+    public string DefaultGameProfile
+    {
+        get => _defaultGameProfile;
+        set
+        {
+            if (value == _defaultGameProfile || !DefaultGameProfiles.Contains(value))
+                return;
+
+            string previous = _defaultGameProfile;
+            _defaultGameProfile = value;
+            OnPropertyChanged();
+
+            try
+            {
+                AppPreferences preferences = _preferencesStore.Load();
+                preferences.DefaultGameProfile = value;
+                _preferencesStore.Save(preferences);
+                Status = $"Профиль по умолчанию для новых игр: {value}";
+            }
+            catch (Exception ex)
+            {
+                AppLog.Warn("Не удалось сохранить профиль по умолчанию", ex);
+                _defaultGameProfile = previous;
+                OnPropertyChanged();
+                Status = $"Не удалось сохранить профиль по умолчанию: {ex.Message}";
+            }
+        }
     }
 
     public string SearchText

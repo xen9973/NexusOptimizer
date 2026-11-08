@@ -7,8 +7,10 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <RootNamespace>NexusOptimizer</RootNamespace>
     <AssemblyName>NexusOptimizer</AssemblyName>
+    <ApplicationIcon>Assets\NexusOptimizer.ico</ApplicationIcon>
   </PropertyGroup>
   <ItemGroup>
+    <Resource Include="Assets\NexusOptimizer.ico" />
     <InternalsVisibleTo Include="NexusOptimizer.Tests" />
   </ItemGroup>
 </Project>

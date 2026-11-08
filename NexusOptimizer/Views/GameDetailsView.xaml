@@ -23,7 +23,7 @@
             <StackPanel Margin="0,0,12,0">
 
                 <!-- Шапка игры -->
-                <Border Style="{StaticResource PanelCard}" Margin="0,0,0,16">
+                <Border Style="{DynamicResource PanelCard}" Margin="0,0,0,16">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="Auto"/>
@@ -32,7 +32,7 @@
 
                         <Border Width="320"
                                 Height="150"
-                                Background="{StaticResource CardBrush}"
+                                Background="{DynamicResource CardBrush}"
                                 VerticalAlignment="Top"
                                 Margin="0,0,22,0">
                             <Border.Clip>
@@ -53,26 +53,26 @@
 
                         <StackPanel Grid.Column="1">
                             <TextBlock x:Name="GameNameText"
-                                       Style="{StaticResource PageTitleText}"
+                                       Style="{DynamicResource PageTitleText}"
                                        TextWrapping="Wrap"/>
                             <TextBlock x:Name="GamePlatformText"
-                                       Style="{StaticResource MutedText}"
+                                       Style="{DynamicResource MutedText}"
                                        Margin="0,6,0,0"/>
                             <TextBlock x:Name="GenresText"
-                                       Foreground="{StaticResource AccentTextBrush}"
+                                       Foreground="{DynamicResource AccentTextBrush}"
                                        FontSize="13"
                                        TextWrapping="Wrap"
                                        Margin="0,10,0,0"
                                        Visibility="Collapsed"/>
                             <TextBlock x:Name="MetaText"
-                                       Style="{StaticResource MutedText}"
+                                       Style="{DynamicResource MutedText}"
                                        FontSize="12"
                                        LineHeight="19"
                                        TextWrapping="Wrap"
                                        Margin="0,8,0,0"
                                        Visibility="Collapsed"/>
                             <TextBlock x:Name="GamePathText"
-                                       Style="{StaticResource MutedText}"
+                                       Style="{DynamicResource MutedText}"
                                        FontSize="11"
                                        TextWrapping="Wrap"
                                        Margin="0,10,0,0"/>
@@ -80,7 +80,7 @@
                             <WrapPanel Margin="0,16,0,0">
                                 <Button Content="Запустить игру"
                                         Click="LaunchGame_Click"
-                                        Style="{StaticResource AccentButton}"
+                                        Style="{DynamicResource AccentButton}"
                                         Padding="24,11"
                                         Margin="0,0,8,8"/>
                                 <Button Content="Открыть папку"
@@ -100,14 +100,14 @@
 
                 <!-- Скриншоты -->
                 <Border x:Name="GalleryCard"
-                        Style="{StaticResource PanelCard}"
+                        Style="{DynamicResource PanelCard}"
                         Margin="0,0,0,16"
                         Visibility="Collapsed">
                     <StackPanel>
-                        <TextBlock Text="Скриншоты" Style="{StaticResource SectionTitleText}"/>
+                        <TextBlock Text="Скриншоты" Style="{DynamicResource SectionTitleText}"/>
 
                         <Border Height="360"
-                                Background="#0B0D11"
+                                Background="{DynamicResource InputBrush}"
                                 CornerRadius="12"
                                 Margin="0,14,0,12">
                             <Image Source="{Binding SelectedItem.FullUrl, ElementName=ScreenshotList}"
@@ -116,7 +116,7 @@
                         </Border>
 
                         <ListBox x:Name="ScreenshotList"
-                                 Style="{StaticResource ThumbListBoxStyle}">
+                                 Style="{DynamicResource ThumbListBoxStyle}">
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Image Source="{Binding ThumbnailUrl}"
@@ -130,18 +130,18 @@
                 </Border>
 
                 <!-- Описание -->
-                <Border Style="{StaticResource PanelCard}" Margin="0,0,0,16">
+                <Border Style="{DynamicResource PanelCard}" Margin="0,0,0,16">
                     <StackPanel HorizontalAlignment="Left" MaxWidth="780">
-                        <TextBlock Text="Об игре" Style="{StaticResource SectionTitleText}"/>
+                        <TextBlock Text="Об игре" Style="{DynamicResource SectionTitleText}"/>
                         <TextBlock x:Name="ShortDescriptionText"
-                                   Foreground="{StaticResource TextBrush}"
+                                   Foreground="{DynamicResource TextBrush}"
                                    FontSize="14"
                                    LineHeight="22"
                                    TextWrapping="Wrap"
                                    Margin="0,12,0,0"
                                    Visibility="Collapsed"/>
                         <TextBlock x:Name="DescriptionText"
-                                   Foreground="{StaticResource BodyTextBrush}"
+                                   Foreground="{DynamicResource BodyTextBrush}"
                                    FontSize="13"
                                    LineHeight="21"
                                    TextWrapping="Wrap"
@@ -150,16 +150,16 @@
                 </Border>
 
                 <!-- Оптимизация игры -->
-                <Border Style="{StaticResource PanelCard}" Margin="0,0,0,8">
+                <Border Style="{DynamicResource PanelCard}" Margin="0,0,0,8">
                     <StackPanel HorizontalAlignment="Left" MaxWidth="780">
-                        <TextBlock Text="Оптимизация игры" Style="{StaticResource SectionTitleText}"/>
-                        <TextBlock Style="{StaticResource MutedText}"
+                        <TextBlock Text="Оптимизация игры" Style="{DynamicResource SectionTitleText}"/>
+                        <TextBlock Style="{DynamicResource MutedText}"
                                    TextWrapping="Wrap"
                                    LineHeight="20"
                                    Margin="0,8,0,0"
                                    Text="Профиль применяется к файлам игры, запускать её для этого не нужно. Каждое действие описано ниже: что оно меняет, чем рискует и как отменяется. Прирост FPS не гарантирован."/>
                         <TextBlock x:Name="TweakTargetsText"
-                                   Style="{StaticResource MutedText}"
+                                   Style="{DynamicResource MutedText}"
                                    FontSize="11"
                                    TextWrapping="Wrap"
                                    Margin="0,8,0,0"/>
@@ -167,13 +167,13 @@
                         <TextBlock Text="Профиль"
                                    FontSize="12"
                                    FontWeight="SemiBold"
-                                   Foreground="{StaticResource BodyTextBrush}"
+                                   Foreground="{DynamicResource BodyTextBrush}"
                                    Margin="0,18,0,8"/>
                         <ListBox x:Name="ProfileList"
-                                 Style="{StaticResource ChipListBoxStyle}"
+                                 Style="{DynamicResource ChipListBoxStyle}"
                                  SelectionChanged="ProfileList_SelectionChanged"/>
                         <TextBlock x:Name="ProfileDescriptionText"
-                                   Style="{StaticResource MutedText}"
+                                   Style="{DynamicResource MutedText}"
                                    FontSize="12"
                                    TextWrapping="Wrap"
                                    Margin="0,10,0,0"/>
@@ -181,8 +181,8 @@
                         <ItemsControl x:Name="ActionsList" Margin="0,16,0,0">
                             <ItemsControl.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Background="{StaticResource CardBrush}"
-                                            BorderBrush="{StaticResource LineBrush}"
+                                    <Border Background="{DynamicResource CardBrush}"
+                                            BorderBrush="{DynamicResource LineBrush}"
                                             BorderThickness="1"
                                             CornerRadius="12"
                                             Padding="16"
@@ -205,16 +205,16 @@
                                                     <TextBlock Text="{Binding Title}"
                                                                FontSize="14"
                                                                FontWeight="SemiBold"
-                                                               Foreground="{StaticResource TextBrush}"
+                                                               Foreground="{DynamicResource TextBrush}"
                                                                VerticalAlignment="Center"
                                                                Margin="0,0,10,0"/>
                                                     <Border CornerRadius="8" Padding="8,2" VerticalAlignment="Center">
                                                         <Border.Style>
                                                             <Style TargetType="Border">
-                                                                <Setter Property="Background" Value="{StaticResource SuccessSoftBrush}"/>
+                                                                <Setter Property="Background" Value="{DynamicResource SuccessSoftBrush}"/>
                                                                 <Style.Triggers>
                                                                     <DataTrigger Binding="{Binding IsMediumRisk}" Value="True">
-                                                                        <Setter Property="Background" Value="{StaticResource WarningSoftBrush}"/>
+                                                                        <Setter Property="Background" Value="{DynamicResource WarningSoftBrush}"/>
                                                                     </DataTrigger>
                                                                 </Style.Triggers>
                                                             </Style>
@@ -222,10 +222,10 @@
                                                         <TextBlock Text="{Binding RiskText}" FontSize="11" FontWeight="SemiBold">
                                                             <TextBlock.Style>
                                                                 <Style TargetType="TextBlock">
-                                                                    <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                                                    <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
                                                                     <Style.Triggers>
                                                                         <DataTrigger Binding="{Binding IsMediumRisk}" Value="True">
-                                                                            <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                                            <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
                                                                         </DataTrigger>
                                                                     </Style.Triggers>
                                                                 </Style>
@@ -235,30 +235,30 @@
                                                 </WrapPanel>
 
                                                 <TextBlock Text="{Binding Description}"
-                                                           Style="{StaticResource MutedText}"
+                                                           Style="{DynamicResource MutedText}"
                                                            FontSize="12"
                                                            LineHeight="18"
                                                            TextWrapping="Wrap"
                                                            Margin="0,6,0,0"/>
                                                 <TextBlock Text="{Binding DetailsText}"
-                                                           Style="{StaticResource MutedText}"
+                                                           Style="{DynamicResource MutedText}"
                                                            FontSize="11"
                                                            LineHeight="17"
                                                            TextWrapping="Wrap"
                                                            Margin="0,6,0,0"/>
                                                 <TextBlock Text="{Binding RiskNote}"
-                                                           Style="{StaticResource MutedText}"
+                                                           Style="{DynamicResource MutedText}"
                                                            FontSize="11"
                                                            TextWrapping="Wrap"
                                                            Margin="0,4,0,0"/>
                                                 <TextBlock Text="{Binding StateText}"
-                                                           Foreground="{StaticResource BodyTextBrush}"
+                                                           Foreground="{DynamicResource BodyTextBrush}"
                                                            FontSize="12"
                                                            FontWeight="SemiBold"
                                                            TextWrapping="Wrap"
                                                            Margin="0,8,0,0"/>
                                                 <TextBlock Text="{Binding ResultText}"
-                                                           Foreground="{StaticResource AccentTextBrush}"
+                                                           Foreground="{DynamicResource AccentTextBrush}"
                                                            FontSize="12"
                                                            TextWrapping="Wrap"
                                                            Margin="0,2,0,0"/>
@@ -280,14 +280,14 @@
                         <TextBlock Text="Аргументы запуска"
                                    FontSize="12"
                                    FontWeight="SemiBold"
-                                   Foreground="{StaticResource BodyTextBrush}"
+                                   Foreground="{DynamicResource BodyTextBrush}"
                                    Margin="0,10,0,6"/>
                         <TextBox x:Name="LaunchArgumentsTextBox"/>
 
                         <WrapPanel Margin="0,20,0,0">
                             <Button Content="Применить профиль"
                                     Click="ApplyProfile_Click"
-                                    Style="{StaticResource AccentButton}"
+                                    Style="{DynamicResource AccentButton}"
                                     Padding="18,10"
                                     Margin="0,0,8,0"/>
                             <Button Content="Вернуть всё как было"
@@ -296,12 +296,12 @@
                         </WrapPanel>
 
                         <TextBlock x:Name="SettingsStatusText"
-                                   Style="{StaticResource MutedText}"
+                                   Style="{DynamicResource MutedText}"
                                    FontSize="12"
                                    TextWrapping="Wrap"
                                    Margin="0,12,0,0"/>
                         <TextBlock x:Name="OptimizationStatusText"
-                                   Foreground="{StaticResource AccentTextBrush}"
+                                   Foreground="{DynamicResource AccentTextBrush}"
                                    FontSize="12"
                                    TextWrapping="Wrap"
                                    Margin="0,4,0,0"/>
@@ -312,7 +312,7 @@
 
         <TextBlock x:Name="WindowStatusText"
                    Grid.Row="2"
-                   Style="{StaticResource MutedText}"
+                   Style="{DynamicResource MutedText}"
                    FontSize="12"
                    TextTrimming="CharacterEllipsis"
                    Margin="2,12,0,0"/>

@@ -1,0 +1,189 @@
+<UserControl x:Class="NexusOptimizer.Views.PcSystemScanView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             Background="{DynamicResource BgBrush}"
+             Foreground="{DynamicResource TextBrush}"
+             FontFamily="{DynamicResource UiFont}">
+    <Grid Margin="24">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock Text="Умная настройка компьютера" Style="{DynamicResource PageTitleText}"/>
+            <TextBlock Text="Сканирование характеристик и подбор обратимых настроек Windows."
+                       Style="{DynamicResource MutedText}"
+                       Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <Border Grid.Row="1"
+                Background="{DynamicResource WarningSoftBrush}"
+                CornerRadius="10"
+                Padding="14,10"
+                Margin="0,14,0,14">
+            <TextBlock Text="Сканирование ничего не меняет. Рекомендации не гарантируют прирост FPS: проверьте каждую и применяйте только нужные настройки."
+                       Foreground="{DynamicResource BodyTextBrush}"
+                       FontSize="12"
+                       TextWrapping="Wrap"/>
+        </Border>
+
+        <Grid Grid.Row="2">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="300"/>
+                <ColumnDefinition Width="14"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" Style="{DynamicResource PanelCard}" Padding="18">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <StackPanel>
+                        <TextBlock Text="Сканирование" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="ScanStateText"
+                                   Text="Нажмите кнопку, чтобы проверить конфигурацию компьютера."
+                                   Style="{DynamicResource MutedText}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,8,0,16"/>
+                        <Grid Height="84" Margin="0,0,0,16">
+                            <Ellipse Width="72" Height="72"
+                                     Stroke="{DynamicResource LineBrush}"
+                                     StrokeThickness="5"/>
+                            <Ellipse Width="72" Height="72"
+                                     Stroke="{DynamicResource AccentBrush}"
+                                     StrokeThickness="5"
+                                     StrokeDashArray="1 2"
+                                     RenderTransformOrigin="0.5,0.5">
+                                <Ellipse.RenderTransform>
+                                    <RotateTransform x:Name="ScanRotation"/>
+                                </Ellipse.RenderTransform>
+                            </Ellipse>
+                            <TextBlock x:Name="ScanIcon"
+                                       Text="N"
+                                       FontSize="24"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource AccentTextBrush}"
+                                       HorizontalAlignment="Center"
+                                       VerticalAlignment="Center"/>
+                        </Grid>
+                        <ProgressBar x:Name="ScanProgress"
+                                     Height="5"
+                                     IsIndeterminate="True"
+                                     Visibility="Collapsed"
+                                     Margin="0,0,0,14"/>
+                        <Button x:Name="ScanButton"
+                                Content="Сканировать компьютер"
+                                Click="Scan_Click"
+                                Style="{DynamicResource AccentButton}"/>
+
+                        <Separator Margin="0,18,0,14"/>
+                        <TextBlock Text="Характеристики" FontSize="14" FontWeight="SemiBold"/>
+                        <TextBlock Text="Windows" Style="{DynamicResource MutedText}" Margin="0,12,0,2"/>
+                        <TextBlock x:Name="WindowsText" Text="—" TextWrapping="Wrap"/>
+                        <TextBlock Text="Процессор" Style="{DynamicResource MutedText}" Margin="0,10,0,2"/>
+                        <TextBlock x:Name="ProcessorText" Text="—" TextWrapping="Wrap"/>
+                        <TextBlock Text="Оперативная память" Style="{DynamicResource MutedText}" Margin="0,10,0,2"/>
+                        <TextBlock x:Name="MemoryText" Text="—" TextWrapping="Wrap"/>
+                        <TextBlock Text="Графика" Style="{DynamicResource MutedText}" Margin="0,10,0,2"/>
+                        <TextBlock x:Name="GraphicsText" Text="—" TextWrapping="Wrap"/>
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <Border Grid.Column="2" Style="{DynamicResource PanelCard}" Padding="18">
+                <Grid>
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <StackPanel>
+                        <TextBlock Text="Рекомендации" FontSize="16" FontWeight="SemiBold"/>
+                        <TextBlock x:Name="RecommendationsStatusText"
+                                   Text="После сканирования здесь появятся подходящие настройки."
+                                   Style="{DynamicResource MutedText}"
+                                   TextWrapping="Wrap"
+                                   Margin="0,5,0,12"/>
+                    </StackPanel>
+                    <Grid Grid.Row="1">
+                        <TextBlock x:Name="EmptyStateText"
+                                   Text="Нажмите «Сканировать компьютер», чтобы начать."
+                                   Foreground="{DynamicResource MutedBrush}"
+                                   HorizontalAlignment="Center"
+                                   VerticalAlignment="Center"
+                                   TextWrapping="Wrap"
+                                   TextAlignment="Center"
+                                   Margin="20"/>
+                        <ScrollViewer x:Name="RecommendationsScroll"
+                                      VerticalScrollBarVisibility="Auto"
+                                      Visibility="Collapsed">
+                            <ItemsControl x:Name="RecommendationsList">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border Background="{DynamicResource CardBrush}"
+                                                BorderBrush="{DynamicResource LineBrush}"
+                                                BorderThickness="1"
+                                                CornerRadius="10"
+                                                Padding="12"
+                                                Margin="0,0,0,8">
+                                            <Grid>
+                                                <Grid.ColumnDefinitions>
+                                                    <ColumnDefinition Width="Auto"/>
+                                                    <ColumnDefinition Width="*"/>
+                                                </Grid.ColumnDefinitions>
+                                                <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}"
+                                                          Checked="Recommendation_Checked"
+                                                          Unchecked="Recommendation_Checked"
+                                                          VerticalAlignment="Top"
+                                                          Margin="0,2,10,0"/>
+                                                <StackPanel Grid.Column="1">
+                                                    <TextBlock Text="{Binding Name}"
+                                                               FontWeight="SemiBold"
+                                                               TextWrapping="Wrap"/>
+                                                    <TextBlock Text="{Binding Reason}"
+                                                               Style="{DynamicResource MutedText}"
+                                                               FontSize="12"
+                                                               TextWrapping="Wrap"
+                                                               Margin="0,5,0,0"/>
+                                                    <TextBlock Text="{Binding Caution}"
+                                                               Foreground="{DynamicResource WarningBrush}"
+                                                               FontSize="11"
+                                                               TextWrapping="Wrap"
+                                                               Margin="0,5,0,0"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </ScrollViewer>
+                    </Grid>
+                    <TextBlock x:Name="WarningText"
+                               Grid.Row="2"
+                               Foreground="{DynamicResource WarningBrush}"
+                               FontSize="11"
+                               TextWrapping="Wrap"
+                               Margin="0,8,0,0"
+                               Visibility="Collapsed"/>
+                </Grid>
+            </Border>
+        </Grid>
+
+        <Grid Grid.Row="3" Margin="0,14,0,0">
+            <TextBlock Text="Выбранные рекомендации можно будет проверить ещё раз перед применением."
+                       Style="{DynamicResource MutedText}"
+                       FontSize="11"
+                       VerticalAlignment="Center"
+                       Margin="0,0,12,0"/>
+            <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                <Button Content="Назад в библиотеку" Click="Back_Click" Margin="0,0,8,0"/>
+                <Button x:Name="ApplyRecommendationsButton"
+                        Content="Проверить и настроить"
+                        Click="ApplyRecommendations_Click"
+                        Style="{DynamicResource AccentButton}"
+                        IsEnabled="False"/>
+            </StackPanel>
+        </Grid>
+    </Grid>
+</UserControl>

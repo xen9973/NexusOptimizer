@@ -16,6 +16,7 @@ public partial class CleanupPreviewWindow : Window
         TitleText.Text = title;
         SummaryText.Text = summary;
         RowsList.ItemsSource = rows;
+        Loaded += (_, _) => UiEntranceAnimator.AnimateOnce(this);
     }
 
     private void Close_Click(object sender, RoutedEventArgs e) => Close();

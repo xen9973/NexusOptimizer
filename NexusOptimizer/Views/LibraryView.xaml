@@ -16,6 +16,7 @@
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
@@ -28,9 +29,9 @@
             </Grid.ColumnDefinitions>
 
             <StackPanel VerticalAlignment="Center">
-                <TextBlock Text="Библиотека" Style="{StaticResource PageTitleText}"/>
+                <TextBlock Text="Библиотека" Style="{DynamicResource PageTitleText}"/>
                 <TextBlock Text="{Binding LibrarySummary}"
-                           Style="{StaticResource MutedText}"
+                           Style="{DynamicResource MutedText}"
                            Margin="0,4,0,0"/>
             </StackPanel>
 
@@ -44,7 +45,7 @@
                         Margin="0,0,10,0"/>
                 <Button Content="{Binding ScanButtonText}"
                         Click="Scan_Click"
-                        Style="{StaticResource AccentButton}"
+                        Style="{DynamicResource AccentButton}"
                         Height="40"
                         MinWidth="170"/>
             </StackPanel>
@@ -59,7 +60,7 @@
 
             <TextBlock Text="⌕"
                        FontSize="18"
-                       Foreground="{StaticResource MutedBrush}"
+                       Foreground="{DynamicResource MutedBrush}"
                        Margin="14,0,0,2"
                        VerticalAlignment="Center"
                        IsHitTestVisible="False"/>
@@ -67,7 +68,7 @@
             <TextBlock Text="Поиск по названию или пути"
                        Margin="40,0,0,0"
                        VerticalAlignment="Center"
-                       Foreground="{StaticResource MutedBrush}"
+                       Foreground="{DynamicResource MutedBrush}"
                        IsHitTestVisible="False">
                 <TextBlock.Style>
                     <Style TargetType="TextBlock">
@@ -82,23 +83,37 @@
             </TextBlock>
         </Grid>
 
+        <!-- Профиль для игр без сохранённых настроек -->
+        <StackPanel Grid.Row="2"
+                    Orientation="Horizontal"
+                    Margin="0,0,0,14">
+            <TextBlock Text="Профиль новым играм"
+                       Style="{DynamicResource MutedText}"
+                       FontSize="12"
+                       VerticalAlignment="Center"
+                       Margin="0,0,12,0"/>
+            <ListBox Style="{DynamicResource ChipListBoxStyle}"
+                     ItemsSource="{Binding DefaultGameProfiles}"
+                     SelectedItem="{Binding DefaultGameProfile, Mode=TwoWay}"/>
+        </StackPanel>
+
         <!-- Фильтр по источнику -->
-        <ListBox Grid.Row="2"
+        <ListBox Grid.Row="3"
                  Margin="0,0,0,14"
-                 Style="{StaticResource ChipListBoxStyle}"
+                 Style="{DynamicResource ChipListBoxStyle}"
                  ItemsSource="{Binding PlatformFilters}"
                  SelectedItem="{Binding SelectedPlatform, Mode=TwoWay}"/>
 
         <!-- Сортировка и избранное -->
-        <StackPanel Grid.Row="3"
+        <StackPanel Grid.Row="4"
                     Orientation="Horizontal"
                     Margin="0,0,0,14">
             <TextBlock Text="Сортировка"
-                       Style="{StaticResource MutedText}"
+                       Style="{DynamicResource MutedText}"
                        FontSize="12"
                        VerticalAlignment="Center"
                        Margin="0,0,12,0"/>
-            <ListBox Style="{StaticResource ChipListBoxStyle}"
+            <ListBox Style="{DynamicResource ChipListBoxStyle}"
                      ItemsSource="{Binding SortModes}"
                      SelectedItem="{Binding SortMode, Mode=TwoWay}"/>
             <CheckBox Content="Только избранное"
@@ -108,11 +123,11 @@
         </StackPanel>
 
         <!-- Папки для поиска -->
-        <StackPanel Grid.Row="4"
+        <StackPanel Grid.Row="5"
                     Margin="0,0,0,6"
                     Visibility="{Binding HasExtraFolders, Converter={StaticResource BoolToVisibility}}">
             <TextBlock Text="Папки для поиска"
-                       Style="{StaticResource MutedText}"
+                       Style="{DynamicResource MutedText}"
                        FontSize="12"
                        Margin="0,0,0,8"/>
             <ItemsControl ItemsSource="{Binding ExtraFolders}">
@@ -123,8 +138,8 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="{StaticResource CardBrush}"
-                                BorderBrush="{StaticResource LineBrush}"
+                        <Border Background="{DynamicResource CardBrush}"
+                                BorderBrush="{DynamicResource LineBrush}"
                                 BorderThickness="1"
                                 CornerRadius="8"
                                 Padding="10,3,3,3"
@@ -134,7 +149,7 @@
                                            ToolTip="{Binding}"
                                            MaxWidth="380"
                                            FontSize="12"
-                                           Foreground="{StaticResource BodyTextBrush}"
+                                           Foreground="{DynamicResource BodyTextBrush}"
                                            TextTrimming="CharacterEllipsis"
                                            VerticalAlignment="Center"/>
                                 <Button Content="✕"
@@ -142,7 +157,7 @@
                                         Click="RemoveFolder_Click"
                                         ToolTip="Убрать папку из поиска"
                                         Background="Transparent"
-                                        Foreground="{StaticResource MutedBrush}"
+                                        Foreground="{DynamicResource MutedBrush}"
                                         Padding="8,3"
                                         Margin="6,0,0,0"/>
                             </StackPanel>
@@ -153,8 +168,8 @@
         </StackPanel>
 
         <!-- Список игр -->
-        <Border Grid.Row="5"
-                Style="{StaticResource PanelCard}"
+        <Border Grid.Row="6"
+                Style="{DynamicResource PanelCard}"
                 Padding="18,18,8,4">
             <Grid>
                 <ScrollViewer VerticalScrollBarVisibility="Auto"
@@ -177,11 +192,11 @@
                                         MouseLeftButtonUp="GameCard_Click">
                                     <Border.Style>
                                         <Style TargetType="Border">
-                                            <Setter Property="Background" Value="{StaticResource CardBrush}"/>
-                                            <Setter Property="BorderBrush" Value="{StaticResource LineBrush}"/>
+                                            <Setter Property="Background" Value="{DynamicResource CardBrush}"/>
+                                            <Setter Property="BorderBrush" Value="{DynamicResource LineBrush}"/>
                                             <Style.Triggers>
                                                 <Trigger Property="IsMouseOver" Value="True">
-                                                    <Setter Property="BorderBrush" Value="{StaticResource AccentBrush}"/>
+                                                    <Setter Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
                                                 </Trigger>
                                             </Style.Triggers>
                                         </Style>
@@ -198,7 +213,7 @@
                                             <Border Width="48"
                                                     Height="48"
                                                     CornerRadius="12"
-                                                    Background="{StaticResource InputBrush}"
+                                                    Background="{DynamicResource InputBrush}"
                                                     VerticalAlignment="Top">
                                                 <Grid>
                                                     <Image Source="{Binding Converter={StaticResource GameIconConverter}}"
@@ -219,16 +234,16 @@
                                                            ToolTip="{Binding Name}"
                                                            FontSize="15"
                                                            FontWeight="SemiBold"
-                                                           Foreground="{StaticResource TextBrush}"
+                                                           Foreground="{DynamicResource TextBrush}"
                                                            TextWrapping="Wrap"
                                                            MaxHeight="42"
                                                            TextTrimming="CharacterEllipsis"/>
                                                 <TextBlock Text="{Binding Platform}"
-                                                           Style="{StaticResource MutedText}"
+                                                           Style="{DynamicResource MutedText}"
                                                            FontSize="12"
                                                            Margin="0,3,0,0"/>
                                                 <TextBlock Text="{Binding LastPlayedText}"
-                                                           Style="{StaticResource MutedText}"
+                                                           Style="{DynamicResource MutedText}"
                                                            FontSize="11"
                                                            Margin="0,2,0,0"/>
                                             </StackPanel>
@@ -243,10 +258,10 @@
                                                     VerticalAlignment="Top">
                                                 <Button.Style>
                                                     <Style TargetType="Button" BasedOn="{StaticResource {x:Type Button}}">
-                                                        <Setter Property="Foreground" Value="{StaticResource MutedBrush}"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsFavorite}" Value="True">
-                                                                <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -260,10 +275,10 @@
                                                 Margin="0,14,0,8">
                                             <Border.Style>
                                                 <Style TargetType="Border">
-                                                    <Setter Property="Background" Value="{StaticResource SuccessSoftBrush}"/>
+                                                    <Setter Property="Background" Value="{DynamicResource SuccessSoftBrush}"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsAvailable}" Value="False">
-                                                            <Setter Property="Background" Value="{StaticResource WarningSoftBrush}"/>
+                                                            <Setter Property="Background" Value="{DynamicResource WarningSoftBrush}"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -271,10 +286,10 @@
                                             <TextBlock Text="{Binding Status}" FontSize="11" FontWeight="SemiBold">
                                                 <TextBlock.Style>
                                                     <Style TargetType="TextBlock">
-                                                        <Setter Property="Foreground" Value="{StaticResource SuccessBrush}"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource SuccessBrush}"/>
                                                         <Style.Triggers>
                                                             <DataTrigger Binding="{Binding IsAvailable}" Value="False">
-                                                                <Setter Property="Foreground" Value="{StaticResource WarningBrush}"/>
+                                                                <Setter Property="Foreground" Value="{DynamicResource WarningBrush}"/>
                                                             </DataTrigger>
                                                         </Style.Triggers>
                                                     </Style>
@@ -284,7 +299,7 @@
 
                                         <TextBlock Text="{Binding InstallPath}"
                                                    ToolTip="{Binding InstallPath}"
-                                                   Style="{StaticResource MutedText}"
+                                                   Style="{DynamicResource MutedText}"
                                                    FontSize="11"
                                                    TextTrimming="CharacterEllipsis"
                                                    Margin="0,0,0,12"/>
@@ -314,10 +329,10 @@
                             MaxWidth="420"
                             Visibility="{Binding IsEmpty, Converter={StaticResource BoolToVisibility}}">
                     <TextBlock Text="{Binding EmptyTitle}"
-                               Style="{StaticResource SectionTitleText}"
+                               Style="{DynamicResource SectionTitleText}"
                                HorizontalAlignment="Center"/>
                     <TextBlock Text="{Binding EmptyHint}"
-                               Style="{StaticResource MutedText}"
+                               Style="{DynamicResource MutedText}"
                                TextWrapping="Wrap"
                                TextAlignment="Center"
                                LineHeight="20"
@@ -327,9 +342,9 @@
         </Border>
 
         <!-- Строка состояния -->
-        <TextBlock Grid.Row="6"
+        <TextBlock Grid.Row="7"
                    Text="{Binding Status}"
-                   Style="{StaticResource MutedText}"
+                   Style="{DynamicResource MutedText}"
                    FontSize="12"
                    TextTrimming="CharacterEllipsis"
                    Margin="2,12,0,0"/>
